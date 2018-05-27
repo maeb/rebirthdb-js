@@ -123,10 +123,6 @@ It('`reconnect` should work', function* (done) {
     connection = yield connection.reconnect();
     assert(connection);
 
-
-    result = yield r.tableList().run(connection);
-    assert.deepEqual(result, [tableName])
-
     done();
   }
   catch(e) {
