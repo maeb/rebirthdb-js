@@ -948,11 +948,16 @@ It('Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName
     done(new Error("Should have thrown an error"))
   }
   catch(e) {
-    if (e.message === "Cannot perform get_field on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).eqJoin(\"id\", r.db(\""+dbName+"\").table(\""+tableName+"\"))\n                         ^^^^                                                                                     \n    .add(1)\n") {
+    if(e.message === `Cannot perform get_field on a non-object non-sequence \`1\` in:
+r.expr([1, 2, 3]).eqJoin("id", r.db("${dbName}").table("${tableName}"))
+                         ^^^^                                                                                     
+    .add(1)
+`) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      console.log(e.message + 'great');
+      done(e);
     }
   }
 })
@@ -982,7 +987,7 @@ It('Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1012,7 +1017,7 @@ It('Test backtrace for r.expr([1,2,3]).map(function(v) { return v}).add(1)', fun
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1038,7 +1043,7 @@ It('Test backtrace for r.expr([1,2,3]).withFields("foo", "bar").add(1)', functio
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1068,7 +1073,7 @@ It('Test backtrace for r.expr([1,2,3]).concatMap(function(v) { return v}).add(1)
             done()
         }
         else {
-            done(e);
+          done(e);
         }
     }
 })
@@ -1090,11 +1095,14 @@ It('Test backtrace for r.expr([1,2,3]).orderBy("foo").add(1)', function* (done) 
     done(new Error("Should have thrown an error"))
   }
   catch(e) {
-    if (e.message === "Cannot perform get_field on a non-object non-sequence `3` in:\nr.expr([1, 2, 3]).orderBy(\"foo\").add(1)\n                          ^^^^^        \n") {
+    if(e.message === `Cannot perform get_field on a non-object non-sequence \`2\` in:
+r.expr([1, 2, 3]).orderBy("foo").add(1)
+                          ^^^^^        
+`) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1121,7 +1129,7 @@ It('Test backtrace for r.expr([1,2,3]).skip("foo").add(1)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1148,7 +1156,7 @@ It('Test backtrace for r.expr([1,2,3]).limit("foo").add(1)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1174,7 +1182,7 @@ It('Test backtrace for r.expr([1,2,3]).slice("foo", "bar").add(1)', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1254,7 +1262,7 @@ It('Test backtrace for r.expr([1,2,3]).isEmpty().add("Hello")', function* (done)
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1280,7 +1288,7 @@ It('Test backtrace for r.expr([1,2,3]).union([5,6]).add("Hello")', function* (do
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1307,7 +1315,7 @@ It('Test backtrace for r.expr([1,2,3]).sample("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1338,7 +1346,7 @@ It('Test backtrace for r.expr([1,2,3]).count(function() { return true}).add("Hel
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1365,7 +1373,7 @@ It('Test backtrace for r.expr([1,2,3]).distinct().add("Hello")', function* (done
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1392,7 +1400,7 @@ It('Test backtrace for r.expr([1,2,3]).contains("foo", "bar").add("Hello")', fun
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1449,7 +1457,7 @@ It('Test backtrace for r.expr([1,2,3]).pluck("foo").add("Hello")', function* (do
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1476,7 +1484,7 @@ It('Test backtrace for r.expr([1,2,3]).without("foo").add("Hello")', function* (
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1503,7 +1511,7 @@ It('Test backtrace for r.expr([1,2,3]).merge("foo").add("Hello")', function* (do
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1530,7 +1538,7 @@ It('Test backtrace for r.expr([1,2,3]).append("foo").add("Hello")', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1557,7 +1565,7 @@ It('Test backtrace for r.expr([1,2,3]).prepend("foo").add("Hello")', function* (
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1584,7 +1592,7 @@ It('Test backtrace for r.expr([1,2,3]).difference("foo").add("Hello")', function
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1610,7 +1618,7 @@ It('Test backtrace for r.expr([1,2,3]).setInsert("foo").add("Hello")', function*
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1636,7 +1644,7 @@ It('Test backtrace for r.expr([1,2,3]).setUnion("foo").add("Hello")', function* 
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1662,7 +1670,7 @@ It('Test backtrace for r.expr([1,2,3]).setIntersection("foo").add("Hello")', fun
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1715,7 +1723,7 @@ It('Test backtrace for r.expr([1,2,3]).hasFields("foo").add("Hello")', function*
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1741,7 +1749,7 @@ It('Test backtrace for r.expr([1,2,3]).insertAt("foo", 2).add("Hello")', functio
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1767,7 +1775,7 @@ It('Test backtrace for r.expr([1,2,3]).spliceAt("foo", 2).add("Hello")', functio
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1794,7 +1802,7 @@ It('Test backtrace for r.expr([1,2,3]).deleteAt("foo", 2).add("Hello")', functio
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1821,7 +1829,7 @@ It('Test backtrace for r.expr([1,2,3]).changeAt("foo", 2).add("Hello")', functio
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1874,7 +1882,7 @@ It('Test backtrace for r.expr([1,2,3]).match("foo").add("Hello")', function* (do
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1901,7 +1909,7 @@ It('Test backtrace for r.expr([1,2,3]).add("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1928,7 +1936,7 @@ It('Test backtrace for r.expr([1,2,3]).sub("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1954,7 +1962,7 @@ It('Test backtrace for r.expr([1,2,3]).mul("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -1980,7 +1988,7 @@ It('Test backtrace for r.expr([1,2,3]).div("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2007,7 +2015,7 @@ It('Test backtrace for r.expr([1,2,3]).mod("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2033,7 +2041,7 @@ It('Test backtrace for r.expr([1,2,3]).and(r.expr("Hello").add(2))', function* (
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2060,7 +2068,7 @@ It('Test backtrace for r.expr(false).or(r.expr("Hello").add(2))', function* (don
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2087,7 +2095,7 @@ It('Test backtrace for r.expr([1,2,3]).eq(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2113,7 +2121,7 @@ It('Test backtrace for r.expr([1,2,3]).ne(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2139,7 +2147,7 @@ It('Test backtrace for r.expr([1,2,3]).gt(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2165,7 +2173,7 @@ It('Test backtrace for r.expr([1,2,3]).lt(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2192,7 +2200,7 @@ It('Test backtrace for r.expr([1,2,3]).le(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2218,7 +2226,7 @@ It('Test backtrace for r.expr([1,2,3]).ge(r.expr("Hello").add(2))', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2244,7 +2252,7 @@ It('Test backtrace for r.expr([1,2,3]).not().add(r.expr("Hello").add(2))', funct
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2270,7 +2278,7 @@ It('Test backtrace for r.now().add("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2297,7 +2305,7 @@ It('Test backtrace for r.time(1023, 11, 3, "Z").add("Hello")', function* (done) 
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2324,7 +2332,7 @@ It('Test backtrace for r.epochTime(12132131).add("Hello")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2350,7 +2358,7 @@ It('Test backtrace for r.ISO8601("UnvalidISO961String").add("Hello")', function*
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2376,7 +2384,7 @@ It('Test backtrace for r.now().inTimezone("noTimezone").add("Hello")', function*
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2402,7 +2410,7 @@ It('Test backtrace for r.now().timezone().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2428,7 +2436,7 @@ It('Test backtrace for r.now().during(r.now(), r.now()).add(true)', function* (d
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2454,7 +2462,7 @@ It('Test backtrace for r.now().timeOfDay().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2481,7 +2489,7 @@ It('Test backtrace for r.now().year().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2507,7 +2515,7 @@ It('Test backtrace for r.now().month().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2533,7 +2541,7 @@ It('Test backtrace for r.now().day().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2559,7 +2567,7 @@ It('Test backtrace for r.now().dayOfWeek().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2585,7 +2593,7 @@ It('Test backtrace for r.now().dayOfYear().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2612,7 +2620,7 @@ It('Test backtrace for r.now().hours().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2638,7 +2646,7 @@ It('Test backtrace for r.now().minutes().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2664,7 +2672,7 @@ It('Test backtrace for r.now().seconds().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2690,7 +2698,7 @@ It('Test backtrace for r.now().toISO8601().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2716,7 +2724,7 @@ It('Test backtrace for r.now().toEpochTime().add(true)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2803,7 +2811,7 @@ It('Test backtrace for r.expr(1).forEach(function(foo) { return foo("bar") })', 
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2830,7 +2838,7 @@ It('Test backtrace for r.error("foo")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2861,7 +2869,7 @@ It('Test backtrace for r.expr({a:1})("b").default("bar").add(2)', function* (don
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2891,7 +2899,7 @@ It('Test backtrace for r.expr({a:1}).add(2)', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2921,7 +2929,7 @@ It('Test backtrace for r.expr({a:1}).add(r.js("2"))', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2947,7 +2955,7 @@ It('Test backtrace for r.expr(2).coerceTo("ARRAY")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2973,7 +2981,7 @@ It('Test backtrace for r.expr(2).add("foo").typeOf()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -2999,7 +3007,7 @@ It('Test backtrace for r.expr(2).add("foo").info()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3051,7 +3059,7 @@ It('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {nonValid:tr
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3116,7 +3124,7 @@ It('Test backtrace for r.expr([1,2]).map(r.row.add("eh"))', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3164,56 +3172,35 @@ It('Test backtrace for r.table("foo").add(1).add(1).add("hello-super-long-string
     done(new Error("Should have thrown an error"))
   }
   catch(e) {
-    if (e.message === `Database \`test\` does not exist in:
+    if (e.message === `Table \`test.foo\` does not exist in:
 r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string")
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^                                                                        
     .add("one-last-string").map(function(var_1) {
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_2) {
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             return var_2("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .mul(var_2("b")).merge({
-                ^^^^^^^^^^^^^^^^^^^^^^^^
                     firstName: "xxxxxx",
-                    ^^^^^^^^^^^^^^^^^^^^
                     lastName: "yyyy",
-                    ^^^^^^^^^^^^^^^^^
                     email: "xxxxx@yyyy.com",
-                    ^^^^^^^^^^^^^^^^^^^^^^^^
                     phone: "xxx-xxx-xxxx"
-                    ^^^^^^^^^^^^^^^^^^^^^
                 })
-                ^^
         }).add(2).map(function(var_3) {
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             return var_3.add("hello-super-long-string").add("another-long-string").add("one-last-string")
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         })
-        ^^
     })
-    ^^
 `) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3242,7 +3229,7 @@ It('Test backtrace for r.expr({a:1, b:r.expr(1).add("eh")})', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3280,7 +3267,7 @@ It('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3313,7 +3300,7 @@ It('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3346,7 +3333,7 @@ It('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3374,7 +3361,7 @@ It('Test backtrace for r.expr({a:r.expr(1).add("eh"), b: 2})', function* (done) 
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3400,7 +3387,7 @@ It('Test backtrace for r.expr([1,2,3]).add("eh")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3431,7 +3418,7 @@ It('Test backtrace for r.expr({a:1}).add("eh")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3458,7 +3445,7 @@ It('Test backtrace for r.expr([1,2,3]).group("foo")', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3515,7 +3502,7 @@ It('Test backtrace for r.expr([1,2,3,"hello"]).sum()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3541,7 +3528,7 @@ It('Test backtrace for r.expr([1,2,3,"hello"]).avg()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3567,7 +3554,7 @@ It('Test backtrace for r.expr([]).min()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3592,7 +3579,7 @@ It('Test backtrace for r.expr([]).max()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3617,7 +3604,7 @@ It('Test backtrace for r.expr([]).avg()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3643,7 +3630,7 @@ It('Test backtrace for r.expr(1).upcase()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
@@ -3668,7 +3655,7 @@ It('Test backtrace for r.expr(1).downcase()', function* (done) {
       done()
     }
     else {
-      console.log(e.message); done(e);
+      done(e);
     }
   }
 })
