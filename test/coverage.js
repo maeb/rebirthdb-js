@@ -1,61 +1,56 @@
-var util = require(__dirname+'/util/common.js');
-var It = util.It;
+const path = require('path')
+const protodef = require(path.join(__dirname, '/../lib/protodef.js'))
+const fs = require('fs')
+const keys = Object.keys(protodef.Term.TermType)
+const {describe, it} = require('mocha')
+const assert = require('assert')
 
-var protodef = require(__dirname+'/../lib/protodef.js');
-var keys = Object.keys(protodef.Term.TermType);
+describe('coverage', () => {
+  // Test that the term appears somewhere in the file, which find terms that were not implemented
+  it('all terms should be present in term.js', async () => {
+    const str = fs.readFileSync(path.join(__dirname, '/../lib/term.js'), 'utf8')
+    const ignoredKeys = [ // not implemented since we use the JSON protocol
+      'DATUM',
+      'MAKE_OBJ',
+      'BETWEEN_DEPRECATED',
+      'ERROR' // define in index, error is defined for behaving like a promise
+    ]
+    const missing = []
 
-var fs = require('fs');
-
-// Test that the term appears somewhere in the file, which find terms that were not implemented
-It('All terms should be present in term.js', function* (done) {
-  var str = fs.readFileSync(__dirname+'/../lib/term.js', 'utf8');
-  var ignoredKeys = { // not implemented since we use the JSON protocol
-    DATUM: true,
-    MAKE_OBJ: true,
-    BETWEEN_DEPRECATED: true,
-    ERROR: true, // define in index, error is defined for behaving like a promise
-  }
-  var missing = [];
-  for(var i=0; i<keys.length; i++) {
-    if (ignoredKeys[keys[i]] === true) {
-      continue;
+    for (const key of keys) {
+      if (ignoredKeys.includes(key)) {
+        continue
+      }
+      if (str.match(new RegExp(key)) === null) {
+        missing.push(key)
+      }
     }
-    if (str.match(new RegExp(keys[i])) === null) {
-      missing.push(keys[i]);
+
+    if (missing.length > 0) {
+      assert.fail('Some terms were not found:', JSON.stringify(missing))
     }
-  }
+  })
 
-  if (missing.length > 0) {
-    done(new Error('Some terms were not found: '+JSON.stringify(missing)));
-  }
-  else {
-    done();
-  }
+  it('All terms should be present in error.js', async () => {
+    const str = fs.readFileSync(path.join(__dirname, '/../lib/error.js'), 'utf8')
+    const ignoredKeys = [
+      'DATUM',
+      'MAKE_OBJ',
+      'BETWEEN_DEPRECATED'
+    ]
+    const missing = []
 
+    for (const key of keys) {
+      if (ignoredKeys.includes(key)) {
+        continue
+      }
+      if (str.match(new RegExp(key)) === null) {
+        missing.push(key)
+      }
+    }
+
+    if (missing.length > 0) {
+      assert.fail('Some terms were not found: ' + JSON.stringify(missing))
+    }
+  })
 })
-It('All terms should be present in error.js', function* (done) {
-  var str = fs.readFileSync(__dirname+'/../lib/error.js', 'utf8');
-  var ignoredKeys = {
-    DATUM: true,
-    MAKE_OBJ: true,
-    BETWEEN_DEPRECATED: true,
-  }
-  var missing = [];
-  for(var i=0; i<keys.length; i++) {
-    if (ignoredKeys[keys[i]] === true) {
-      continue;
-    }
-    if (str.match(new RegExp(keys[i])) === null) {
-      missing.push(keys[i]);
-    }
-  }
-
-  if (missing.length > 0) {
-    done(new Error('Some terms were not found: '+JSON.stringify(missing)));
-  }
-  else {
-    done();
-  }
-
-})
-
