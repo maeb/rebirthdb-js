@@ -7,7 +7,6 @@ const uuid = util.uuid
 const net = require('net')
 const {beforeEach, afterEach, describe, it} = require('mocha')
 
-
 describe('accessing-reql', function () {
   let connection // global connection
   let dbName, tableName, result
@@ -22,8 +21,7 @@ describe('accessing-reql', function () {
       connection = await r.connect(config)
       assert(connection.open)
     }
-    // clean up any dbs
-    /*
+    // remove any dbs created between each test case
     for (dbName of await r.dbList().run(connection)) {
       if (dbName === 'rethinkdb' || dbName === 'test') {
         continue
@@ -31,8 +29,6 @@ describe('accessing-reql', function () {
         await r.dbDrop(dbName).run(connection)
       }
     }
-    */
-    // close connection before next test case
     await connection.close()
     assert(!connection.open)
   })
@@ -84,7 +80,7 @@ describe('accessing-reql', function () {
     assert.equal(result.config_changes.length, 1)
     assert.equal(result.dbs_dropped, 1)
   })
-  
+
   it('`run` should use the default database', async () => {
     dbName = uuid()
     tableName = uuid()
@@ -160,7 +156,24 @@ describe('accessing-reql', function () {
   })
 
   it('`noreplyWait` should work', async function () {
-    await connection.noreplyWait()
+    dbName = uuid()
+    tableName = uuid()
+    const largeishObject = Array(10000).fill(Math.random()).map((random) => r.expr({random}))
+
+    await r.dbCreate(dbName).run(connection)
+    await r.db(dbName).tableCreate(tableName).run(connection)
+
+    result = await r.db(dbName).table(tableName).insert(largeishObject).run(connection, {noreply: true})
+    assert.equal(result, undefined)
+
+    result = await r.db(dbName).table(tableName).count().run(connection)
+    assert.equal(result, 0)
+
+    result = await connection.noreplyWait()
+    assert.equal(result, undefined)
+
+    result = await r.db(dbName).table(tableName).count().run(connection)
+    assert.equal(result, 10000)
   })
 
   it('`run` should take an argument', async function () {
@@ -264,13 +277,13 @@ describe('accessing-reql', function () {
   })
 
   it('`grant` should work', async function () {
-
     const restrictedDbName = uuid()
     const restrictedTableName = uuid()
 
     result = await r.dbCreate(restrictedDbName).run(connection)
     assert.equal(result.config_changes.length, 1)
     assert.equal(result.dbs_created, 1)
+
     result = await r.db(restrictedDbName).tableCreate(restrictedTableName).run(connection)
     assert.equal(result.tables_created, 1)
 
