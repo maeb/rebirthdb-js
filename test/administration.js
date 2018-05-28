@@ -53,28 +53,25 @@ describe('administration', () => {
     assert.notEqual(result.status, undefined)
   })
 
-  it('`status` should throw if called with an argument', async function (done) {
+  it('`status` should throw if called with an argument', async function () {
     try {
       await r.db(dbName).table(tableName).status('hello').run()
       assert.fail('should throw')
     } catch (e) {
-      if (e.message.match(/^`status` takes 0 argument, 1 provided after:/)) {
-        done()
-      } else {
-        done(e)
-      }
+      assert(e.message.match(/^`status` takes 0 argument, 1 provided after:/))
     }
   })
 
   it('`wait` should work', async function () {
     result = await r.db(dbName).table(tableName).wait().run()
     assert.equal(result.ready, 1)
-
-    await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes', timeout: 2000}).run()
   })
 
   it('`wait` should work with options', async function () {
     result = await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes'}).run()
+    assert.equal(result.ready, 1)
+
+    result = await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes', timeout: 2000}).run()
     assert.equal(result.ready, 1)
   })
 
@@ -119,7 +116,6 @@ describe('administration', () => {
     try {
       result = await r.db(dbName).table(tableName).reconfigure({foo: 1}).run()
       assert.fail('should throw')
-      assert.equal(result.reconfigured, 0)
     } catch (e) {
       assert(e.message.match(/^Unrecognized option `foo` in `reconfigure` after:/))
     }
