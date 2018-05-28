@@ -6,7 +6,7 @@ const assert = require('assert')
 const uuid = util.uuid
 const {before, after, describe, it} = require('mocha')
 
-describe('administration', () => {
+describe('backtraces', () => {
   let r, dbName, tableName, result
 
   before(async () => {
