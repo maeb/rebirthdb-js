@@ -543,7 +543,9 @@ describe('cursor', () => {
 
     cursor = await r1.db(dbName).table(tableName).run()
     assert.equal(cursor.toString(), '[object Cursor]')
-    await cursor.close().then().catch(assert.fail)
+
+    await cursor.close()
+    await r1.getPoolMaster().drain()
   })
 
   it('`each` should not return an error if the feed is closed - 1', async () => {
