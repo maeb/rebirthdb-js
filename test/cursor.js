@@ -443,7 +443,7 @@ describe('administration', () => {
         feed.next().then(assert)
         i++
         if (i === smallNumDocs) {
-          return feed.close().then(resolve).catch(reject)
+          return feed.close().then(resolve).error(reject)
         }
       }
     })
