@@ -7,6 +7,7 @@ var REQUIRE_FILES = [
   'dequeue.js',
   'error.js',
   'helper.js',
+  'linked_list.js',
   'metadata.js',
   'pool.js',
   'pool_master.js',
