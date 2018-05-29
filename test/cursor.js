@@ -8,7 +8,7 @@ const assert = require('assert')
 const iterall = require('iterall')
 const {before, after, describe, it} = require('mocha')
 
-describe('administration', () => {
+describe('cursor', () => {
   let r, connection, dbName, tableName, tableName2, cursor, result, feed
 
   const numDocs = 100 // Number of documents in the "big table" used to test the SUCCESS_PARTIAL
