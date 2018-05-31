@@ -1,9 +1,8 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/config.js'))
 const rethinkdbdash = require(path.join(__dirname, '/../lib'))
-const util = require(path.join(__dirname, '/util/common.js'))
 const assert = require('assert')
-const uuid = util.uuid
+const {uuid} = require(path.join(__dirname, './util/common.js'))
 const {before, after, describe, it} = require('mocha')
 
 describe('aggregation', () => {
