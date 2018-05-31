@@ -1,201 +1,141 @@
-var config = require(__dirname+'/config.js');
-var r = require(__dirname+'/../lib')(config);
-var util = require(__dirname+'/util/common.js');
-var assert = require('assert');
+const path = require('path')
+const config = require('./config.js')
+const rethinkdbdash = require(path.join(__dirname, '/../lib'))
+const {uuid} = require(path.join(__dirname, '/util/common.js'))
+const assert = require('assert')
+const {before, after, describe, it} = require('mocha')
 
-var uuid = util.uuid;
-var It = util.It;
+describe('manipulating databases', () => {
+  let r
 
-var uuid = util.uuid;
-var dbName, tableName, result;
+  before(async function () {
+    r = await rethinkdbdash(config)
+  })
 
+  after(async function () {
+    await r.getPoolMaster().drain()
+  })
 
-It('Init for `manipulating-databases.js`', function* (done) {
-  try {
-    result = yield r.expr(1).run();
-    assert(result, 1);
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`expr` should work', async function () {
+    const result = await r.expr(1).run()
+    assert(result, 1)
+  })
 
-It('`dbList` should return a cursor', function* (done) {
-  try {
-    result = yield r.dbList().run();
-    assert(Array.isArray(result));
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`dbList` should return a cursor', async function () {
+    const result = await r.dbList().run()
+    assert(Array.isArray(result))
+  })
 
-It('`dbCreate` should create a database', function* (done) {
-  try {
-    dbName = uuid(); // export to the global scope
+  it('`dbCreate` should create a database', async function () {
+    const dbName = uuid() // export to the global scope
 
-    result = yield r.dbCreate(dbName).run();
-    assert.equal(result.dbs_created, 1);
+    const result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`dbCreate` should throw if no argument is given', function* (done) {
-  try {
-    result = yield r.dbCreate().run();
-  }
-  catch(e) {
-    if (e.message === "`dbCreate` takes 1 argument, 0 provided.") {
-      done()
+  it('`dbCreate` should throw if no argument is given', async function () {
+    try {
+      await r.dbCreate().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`dbCreate` takes 1 argument, 0 provided.')
     }
-    else {
-      done(e)
-    }
-  }
-})
-It('`dbCreate` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).dbCreate("foo").run();
-  }
-  catch(e) {
-    if (e.message === "`dbCreate` is not defined after:\nr.expr(1)") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`dbCreate` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).db("foo").run();
-  }
-  catch(e) {
-    if (e.message === "`db` is not defined after:\nr.expr(1)") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`db` should throw is the name contains special char', function* (done) {
-  try {
-    result = yield r.db("-_-").run();
-  }
-  catch(e) {
-    if (e.message.match(/Database name `-_-` invalid \(Use A-Za-z0-9_ only\)/)) { done(); }
-    else { done(e); }
-  }
-})
-It('`dbList` should show the database we created', function* (done) {
-  try {
-    result = yield r.dbList().run();
-    assert(Array.isArray(result));
+  })
 
-    var found = false;
-    for(var i=0; i<result.length; i++) {
-      if (result[i] === dbName) {
-        found = true; 
-        break;
-      }
-    };
+  it('`dbCreate` is not defined after a term', async function () {
+    try {
+      await r.expr(1).dbCreate('foo').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`dbCreate` is not defined after:\nr.expr(1)')
+    }
+  })
 
-    if (found === false) done(new Error("Previously created database not found."))
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`dbDrop` should drop a table', function* (done) {
-  try {
-    result = yield r.dbDrop(dbName).run();
-    assert.deepEqual(result.dbs_dropped, 1);
+  it('`dbCreate` is not defined after a term', async function () {
+    try {
+      await r.expr(1).db('foo').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`db` is not defined after:\nr.expr(1)')
+    }
+  })
 
-    done();
-  }
-  catch(e) {
-    console.log(e);
-    done(e);
-  }
-})
-It('`dbDrop` should throw if no argument is given', function* (done) {
-  try {
-    result = yield r.dbDrop("foo", "bar", "ette").run();
-  }
-  catch(e) {
-    if (e.message === "`dbDrop` takes 1 argument, 3 provided.") {
-      done()
+  it('`db` should throw is the name contains special char', async function () {
+    try {
+      await r.db('-_-').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/Database name `-_-` invalid \(Use A-Za-z0-9_ only\)/))
     }
-    else {
-      done(e)
-    }
-  }
-})
-It('`dbDrop` should throw if no argument is given', function* (done) {
-  try {
-    result = yield r.dbDrop().run();
-  }
-  catch(e) {
-    if (e.message === "`dbDrop` takes 1 argument, 0 provided.") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`dbDrop` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).dbDrop("foo").run();
-  }
-  catch(e) {
-    if (e.message === "`dbDrop` is not defined after:\nr.expr(1)") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`dbList` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).dbList("foo").run();
-  }
-  catch(e) {
-    if (e.message === "`dbList` is not defined after:\nr.expr(1)") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
+  })
 
+  it('`dbList` should show the database we created', async function () {
+    const dbName = uuid() // export to the global scope
 
-It('`dbList` should not show the database we dropped', function* (done) {
-  try {
-    result = yield r.dbList().run();
-    assert(Array.isArray(result));
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
 
-    var found = false;
-    for(var i=0; i<result.length; i++) {
-      if (result[i] === dbName) {
-        found = true; 
-        break;
-      }
-    };
+    result = await r.dbList().run()
+    assert(Array.isArray(result))
+    assert(result.find((name) => name === dbName) !== undefined)
+  })
 
-    if (found === true) done(new Error("Previously dropped database found."))
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
+  it('`dbDrop` should drop a table', async function () {
+    const dbName = uuid() // export to the global scope
+
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
+
+    result = await r.dbDrop(dbName).run()
+    assert.deepEqual(result.dbs_dropped, 1)
+  })
+
+  it('`dbDrop` should throw if given too many arguments', async function () {
+    try {
+      await r.dbDrop('foo', 'bar', 'ette').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`dbDrop` takes 1 argument, 3 provided.')
+    }
+  })
+
+  it('`dbDrop` should throw if no argument is given', async function () {
+    try {
+      await r.dbDrop().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`dbDrop` takes 1 argument, 0 provided.')
+    }
+  })
+
+  it('`dbDrop` is not defined after a term', async function () {
+    try {
+      await r.expr(1).dbDrop('foo').run()
+    } catch (e) {
+      assert.equal(e.message, '`dbDrop` is not defined after:\nr.expr(1)')
+    }
+  })
+
+  it('`dbList` is not defined after a term', async function () {
+    try {
+      await r.expr(1).dbList('foo').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, '`dbList` is not defined after:\nr.expr(1)')
+    }
+  })
+
+  it('`dbList` should contain dropped databases', async function () {
+    const dbName = uuid() // export to the global scope
+
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
+
+    result = await r.dbDrop(dbName).run()
+    assert.deepEqual(result.dbs_dropped, 1)
+
+    result = await r.dbList().run()
+    assert(Array.isArray(result))
+    assert(result.find((name) => name === dbName) === undefined)
+  })
 })
