@@ -41,7 +41,6 @@ describe('nodeify', () => {
         assert.ifError(err)
         assert.equal(result.$reql_type$, 'TIME')
       })
-
       await connection.close()
     })
 
@@ -72,31 +71,21 @@ describe('nodeify', () => {
     it('Testing conn.close with a callback - 1', async function () {
       await r.connect(config, function (err, conn) {
         assert.ifError(err)
-        conn.close(function (err, conn) {
-          assert.ifError(err)
-          assert(!conn)
-        })
+        conn.close()
       })
     })
 
     it('Testing conn.close with a callback - 2', async function () {
       await r.connect(config, function (err, conn) {
         assert.ifError(err)
-        conn.close({noreplyWait: true}, function (err, conn) {
-          // This may or may not succeed, depending on the config file
-          assert.ifError(err)
-          assert(!conn)
-        })
+        conn.close({noreplyWait: true}, assert.ifError)
       })
     })
 
     it('Testing conn.noreplyWait with a callback', async function () {
       await r.connect(config, function (err, conn) {
         assert.ifError(err)
-        return conn.noreplyWait(() => {
-          // This may or may not succeed, depending on the config file
-          conn.close()
-        })
+        conn.noreplyWait(() => conn.close())
       })
     })
   })
@@ -119,11 +108,8 @@ describe('nodeify', () => {
 
     it('Testing valid syntax for `run` - 5', async function () {
       const result = await r_.now().run(function (err, result) {
-        if (err) {
-          throw err
-        } else {
-          return result
-        }
+        assert.ifError(err)
+        return result
       })
       assert(result instanceof Date)
     })
@@ -151,7 +137,6 @@ describe('nodeify', () => {
         cursor.next(function (err, result) {
           assert.ifError(err)
           assert.deepEqual(result, 1)
-          cursor.close().catch(assert.ifError)
         })
       })
     })
@@ -159,23 +144,16 @@ describe('nodeify', () => {
     it('Testing cursor.close with a callback', async function () {
       await r_.expr([1, 2, 3]).run({cursor: true}, function (err, cursor) {
         assert.ifError(err)
-        cursor.close(function (err, conn) {
-          assert.ifError(err)
-          assert(!conn)
-        })
+        cursor.close()
       })
     })
 
     it('Testing cursor.close with a callback when already closed', async function () {
-      r_.expr([1, 2, 3]).run({cursor: true}, function (err, cursor) {
+      await r_.expr([1, 2, 3]).run({cursor: true}, function (err, cursor) {
         assert.ifError(err)
-        cursor.close(function (err, conn) {
+        cursor.close(function (err) {
           assert.ifError(err)
-          assert(!conn)
-          cursor.close(function (err, conn) {
-            assert.ifError(err)
-            assert(!conn)
-          })
+          cursor.close()
         })
       })
     })
