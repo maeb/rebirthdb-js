@@ -8,7 +8,7 @@ const {Readable} = require('stream')
 const Stream = require('stream')
 const devnull = require('dev-null')
 
-describe('stream', () => {
+describe('transform stream', () => {
   let r, dbName, tableName, dumpTable
   const numDocs = 100 // Number of documents in the "big table" used to test the SUCCESS_PARTIAL
 
