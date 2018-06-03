@@ -40,7 +40,7 @@ describe('pool legacy', () => {
           ? resolve(numConnections)
           : reject(new Error('expected number of connections to equal option.buffer within 250 msecs'))
       }, 50)
-    }).catch(assert.ifError)
+    })
     assert.equal(options.buffer, result, 'expected buffer option to result in number of created connections')
   })
 
