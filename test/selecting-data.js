@@ -1,388 +1,233 @@
-var config = require(__dirname+'/config.js');
-var r = require(__dirname+'/../lib')(config);
-var util = require(__dirname+'/util/common.js');
-var assert = require('assert');
-var Promise = require('bluebird');
+const path = require('path')
+const config = require('./config.js')
+const rethinkdbdash = require(path.join(__dirname, '/../lib'))
+const assert = require('assert')
+const {uuid} = require(path.join(__dirname, '/util/common.js'))
+const {before, after, describe, it} = require('mocha')
 
-var uuid = util.uuid;
-var It = util.It;
+describe('pool legacy', () => {
+  let r, dbName, tableName, pks
 
-var uuid = util.uuid;
-var dbName, tableName, result, pks;
+  before(async () => {
+    r = await rethinkdbdash(config)
 
+    dbName = uuid()
+    tableName = uuid()
 
-It('Init for `selecting-data.js`', function* (done) {
-  try {
-    dbName = uuid();
-    tableName = uuid();
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
 
-    result = yield r.dbCreate(dbName).run();
-    assert.equal(result.dbs_created, 1);
+    result = await r.db(dbName).tableCreate(tableName).run()
+    assert.equal(result.tables_created, 1)
 
-    result = yield r.db(dbName).tableCreate(tableName).run();
-    assert.equal(result.tables_created, 1);
+    result = await r.db(dbName).table(tableName).insert(Array(100).fill({})).run()
+    assert.equal(result.inserted, 100)
+    pks = result.generated_keys
+  })
 
-    result = yield r.db(dbName).table(tableName).insert(eval('['+new Array(100).join('{}, ')+'{}]')).run();
-    assert.equal(result.inserted, 100);
-    pks = result.generated_keys;
+  after(async () => {
+    await r.getPoolMaster().drain()
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`db` should work', async function () {
+    const result = await r.db(dbName).info().run()
+    assert.equal(result.name, dbName)
+    assert.equal(result.type, 'DB')
+  })
 
-It('`db` should work', function* (done) {
-  try {
-    result = yield r.db(dbName).info().run();
-    assert.equal(result.name, dbName);
-    assert.equal(result.type, 'DB');
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-It('`table` should work', function* (done) {
-  try {
-    result = yield r.db(dbName).table(tableName).info().run();
+  it('`table` should work', async function () {
+    let result = await r.db(dbName).table(tableName).info().run()
     assert.equal(result.name, tableName)
     assert.equal(result.type, 'TABLE')
     assert.equal(result.primary_key, 'id')
     assert.equal(result.db.name, dbName)
 
-    result = yield r.db(dbName).table(tableName).run();
+    result = await r.db(dbName).table(tableName).run()
     assert.equal(result.length, 100)
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`table` should work with readMode', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName, {readMode: 'majority'}).run();
+  })
+
+  it('`table` should work with readMode', async function () {
+    let result = await r.db(dbName).table(tableName, {readMode: 'majority'}).run()
     assert.equal(result.length, 100)
 
-    result = yield r.db(dbName).table(tableName, {readMode: 'majority'}).run();
+    result = await r.db(dbName).table(tableName, {readMode: 'majority'}).run()
     assert.equal(result.length, 100)
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`table` should throw with non valid otpions', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName, {nonValidKey: false}).run();
-  }
-  catch(e) {
-    if (e.message === 'Unrecognized option `nonValidKey` in `table` after:\nr.db("'+dbName+'")\nAvailable option is readMode <string>') {
-      done();
+  it('`table` should throw with non valid otpions', async function () {
+    try {
+      await r.db(dbName).table(tableName, {nonValidKey: false}).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert.equal(e.message, 'Unrecognized option `nonValidKey` in `table` after:\nr.db("' + dbName + '")\nAvailable option is readMode <string>')
     }
-    else {
-      done(e);
-    }
-  }
-})
+  })
 
-It('`get` should work', function* (done) {
-  try {
-    result = yield r.db(dbName).table(tableName).get(pks[0]).run();
+  it('`get` should work', async function () {
+    const result = await r.db(dbName).table(tableName).get(pks[0]).run()
     assert.deepEqual(result, {id: pks[0]})
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`get` should throw if no argument is passed', function* (done) {
-  try {
-    result = yield r.db(dbName).table(tableName).get().run();
-  }
-  catch(e) {
-    assert(e instanceof r.Error.ReqlDriverError);
-    assert(e instanceof Error);
-    if (e.message === '`get` takes 1 argument, 0 provided after:\nr.db("'+dbName+'").table("'+tableName+'")') {
-      done();
+  it('`get` should throw if no argument is passed', async function () {
+    try {
+      await r.db(dbName).table(tableName).get().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e instanceof r.Error.ReqlDriverError)
+      assert(e instanceof Error)
+      assert.equal(e.message, '`get` takes 1 argument, 0 provided after:\nr.db("' + dbName + '").table("' + tableName + '")')
     }
-    else{
-      done(e);
-    }
-  }
-})
+  })
 
-It('`getAll` should work with multiple values - primary key', function* (done) {
-  try {
-    var table = r.db(dbName).table(tableName);
-    var query = table.getAll.apply(table, pks);
-    result = yield query.run();
-    assert.equal(result.length, 100);
+  it('`getAll` should work with multiple values - primary key', async function () {
+    let table = r.db(dbName).table(tableName)
+    let query = table.getAll.apply(table, pks)
+    let result = await query.run()
+    assert.equal(result.length, 100)
 
-    table = r.db(dbName).table(tableName);
-    query = table.getAll.apply(table, pks.slice(0, 50));
-    result = yield query.run();
-    assert.equal(result.length, 50);
+    table = r.db(dbName).table(tableName)
+    query = table.getAll.apply(table, pks.slice(0, 50))
+    result = await query.run()
+    assert.equal(result.length, 50)
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`getAll` should work with no argument - primary key', async function () {
+    const result = await r.db(dbName).table(tableName).getAll().run()
+    assert.equal(result.length, 0)
+  })
 
-It('`getAll` should work with no argument - primary key', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).getAll().run();
-    assert.equal(result.length, 0);
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`getAll` should work with no argument - index', async function () {
+    const result = await r.db(dbName).table(tableName).getAll({index: 'id'}).run()
+    assert.equal(result.length, 0)
+  })
 
-It('`getAll` should work with no argument - index', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).getAll({index: 'id'}).run();
-    assert.equal(result.length, 0);
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`getAll` should work with multiple values - secondary index 1', async function () {
+    let result = await r.db(dbName).table(tableName).update({field: 0}).run()
+    assert.equal(result.replaced, 100)
+    result = await r.db(dbName).table(tableName).sample(20).update({field: 10}).run()
+    assert.equal(result.replaced, 20)
 
-It('`getAll` should work with multiple values - secondary index 1', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).update({field: 0}).run();
-    assert.equal(result.replaced, 100);
-    result = yield r.db(dbName).table(tableName).sample(20).update({field: 10}).run();
-    assert.equal(result.replaced, 20);
+    result = await r.db(dbName).table(tableName).indexCreate('field').run()
+    assert.deepEqual(result, {created: 1})
 
-    result = yield r.db(dbName).table(tableName).indexCreate('field').run();
-    assert.deepEqual(result, {created: 1});
+    result = await r.db(dbName).table(tableName).indexWait('field').pluck('index', 'ready').run()
+    assert.deepEqual(result, [{'index': 'field', 'ready': true}])
 
-    result = yield r.db(dbName).table(tableName).indexWait('field').pluck('index', 'ready').run();
-    assert.deepEqual(result, [{'index':'field','ready':true}]);
+    result = await r.db(dbName).table(tableName).getAll(10, {index: 'field'}).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
 
-    // Yield one second -- See https://github.com/rethinkdb/rethinkdb/issues/2170
-    var p = new Promise(function(resolve, reject) {
-      setTimeout(function() { resolve() }, 1000)
-    });
-    yield p;
-    result = yield r.db(dbName).table(tableName).getAll(10, {index: 'field'}).run();
-    assert(result);
-    assert.equal(result.length, 20);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`getAll` should return native dates (and cursor should handle them)', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).insert({field: -1, date: r.now()}).run();
-    result = yield r.db(dbName).table(tableName).getAll(-1, {index: 'field'}).run();
-    assert(result[0].date instanceof Date);
+  it('`getAll` should return native dates (and cursor should handle them)', async function () {
+    let result = await r.db(dbName).table(tableName).insert({field: -1, date: r.now()}).run()
+    result = await r.db(dbName).table(tableName).getAll(-1, {index: 'field'}).run()
+    assert(result[0].date instanceof Date)
     // Clean for later
-    result = yield r.db(dbName).table(tableName).getAll(-1, {index: 'field'}).delete().run();
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+    result = await r.db(dbName).table(tableName).getAll(-1, {index: 'field'}).delete().run()
+  })
 
-It('`getAll` should work with multiple values - secondary index 2', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).indexCreate('fieldAddOne', function(doc) { return doc('field').add(1) }).run();
-    assert.deepEqual(result, {created: 1});
+  it('`getAll` should work with multiple values - secondary index 2', async function () {
+    let result = await r.db(dbName).table(tableName).indexCreate('fieldAddOne', function (doc) { return doc('field').add(1) }).run()
+    assert.deepEqual(result, {created: 1})
 
-    result = yield r.db(dbName).table(tableName).indexWait('fieldAddOne').pluck('index', 'ready').run();
-    assert.deepEqual(result, [{'index':'fieldAddOne','ready':true}]);
+    result = await r.db(dbName).table(tableName).indexWait('fieldAddOne').pluck('index', 'ready').run()
+    assert.deepEqual(result, [{'index': 'fieldAddOne', 'ready': true}])
 
-    // Yield one second -- See https://github.com/rethinkdb/rethinkdb/issues/2170
-    var p = new Promise(function(resolve, reject) {
-      setTimeout(function() { resolve() }, 1000)
-    });
-    yield p;
+    result = await r.db(dbName).table(tableName).getAll(11, {index: 'fieldAddOne'}).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
 
-    result = yield r.db(dbName).table(tableName).getAll(11, {index: 'fieldAddOne'}).run();
-    assert(result);
-    assert.equal(result.length, 20);
+  it('`between` should wrok -- secondary index', async function () {
+    const result = await r.db(dbName).table(tableName).between(5, 20, {index: 'fieldAddOne'}).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+  it('`between` should wrok -- all args', async function () {
+    const result = await r.db(dbName).table(tableName).between(5, 20, {index: 'fieldAddOne', leftBound: 'open', rightBound: 'closed'}).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
 
-It('`between` should wrok -- secondary index', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).between(5, 20, {index: 'fieldAddOne'}).run();
-    assert(result);
-    assert.equal(result.length, 20);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`between` should wrok -- all args', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).between(5, 20, {index: 'fieldAddOne', leftBound: 'open', rightBound: 'closed'}).run();
-    assert(result);
-    assert.equal(result.length, 20);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`between` should throw if no argument is passed', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).between().run();
-  }
-  catch(e) {
-    assert(e instanceof r.Error.ReqlDriverError);
-    assert(e instanceof Error);
-    if (e.message === "`between` takes at least 2 arguments, 0 provided after:\nr.db(\""+dbName+"\").table(\""+tableName+"\")") {
-      done();
+  it('`between` should throw if no argument is passed', async function () {
+    try {
+      await r.db(dbName).table(tableName).between().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e instanceof r.Error.ReqlDriverError)
+      assert(e instanceof Error)
+      assert.equal(e.message, '`between` takes at least 2 arguments, 0 provided after:\nr.db("' + dbName + '").table("' + tableName + '")')
     }
-    else{
-      done(e);
+  })
+
+  it('`between` should throw if non valid arg', async function () {
+    try {
+      await r.db(dbName).table(tableName).between(1, 2, {nonValidKey: true}).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e instanceof r.Error.ReqlDriverError)
+      assert(e instanceof Error)
+      assert.equal(e.message, 'Unrecognized option `nonValidKey` in `between` after:\nr.db("' + dbName + '").table("' + tableName + '")\nAvailable options are index <string>, leftBound <string>, rightBound <string>')
     }
-  }
-})
-It('`between` should throw if non valid arg', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).between(1, 2, {nonValidKey: true}).run();
-  }
-  catch(e) {
-    assert(e instanceof r.Error.ReqlDriverError);
-    assert(e instanceof Error);
-    if (e.message === 'Unrecognized option `nonValidKey` in `between` after:\nr.db("'+dbName+'").table("'+tableName+'")\nAvailable options are index <string>, leftBound <string>, rightBound <string>') {
-      done();
+  })
+
+  it('`filter` should work -- with an object', async function () {
+    const result = await r.db(dbName).table(tableName).filter({field: 10}).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
+
+  it('`filter` should work -- with an object -- looking for an undefined field', async function () {
+    const result = await r.db(dbName).table(tableName).filter({nonExistingField: 10}).run()
+    assert(result)
+    assert.equal(result.length, 0)
+  })
+
+  it('`filter` should work -- with an anonymous function', async function () {
+    const result = await r.db(dbName).table(tableName).filter(function (doc) { return doc('field').eq(10) }).run()
+    assert(result)
+    assert.equal(result.length, 20)
+  })
+
+  it('`filter` should work -- default true', async function () {
+    const result = await r.db(dbName).table(tableName).filter({nonExistingField: 10}, {default: true}).run()
+    assert(result)
+    assert.equal(result.length, 100)
+  })
+
+  it('`filter` should work -- default false', async function () {
+    const result = await r.db(dbName).table(tableName).filter({nonExistingField: 10}, {default: false}).run()
+    assert(result)
+    assert.equal(result.length, 0)
+  })
+
+  it('`filter` should work -- default false', async function () {
+    try {
+      await r.expr([{a: 1}, {}]).filter(r.row('a'), {default: r.error()}).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^No attribute `a` in object:/))
     }
-    else{
-      done(e);
+  })
+
+  it('`filter` should throw if no argument is passed', async function () {
+    try {
+      await r.db(dbName).table(tableName).filter().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e instanceof r.Error.ReqlDriverError)
+      assert(e instanceof Error)
+      assert.equal(e.message, '`filter` takes at least 1 argument, 0 provided after:\nr.db("' + dbName + '").table("' + tableName + '")')
     }
-  }
-})
+  })
 
-It('`filter` should work -- with an object', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter({field: 10}).run();
-    assert(result);
-    assert.equal(result.length, 20);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`filter` should work -- with an object -- looking for an undefined field', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter({nonExistingField: 10}).run();
-    assert(result);
-    assert.equal(result.length, 0);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-
-It('`filter` should work -- with an anonymous function', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter(function(doc) { return doc("field").eq(10) }).run();
-    assert(result);
-    assert.equal(result.length, 20);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-It('`filter` should work -- default true', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter({nonExistingField: 10}, {default: true}).run();
-    assert(result);
-    assert.equal(result.length, 100);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-It('`filter` should work -- default false', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter({nonExistingField: 10}, {default: false}).run();
-    assert(result);
-    assert.equal(result.length, 0);
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-It('`filter` should work -- default false', function* (done) {
-  try{
-    var result = yield r.expr([{a:1}, {}]).filter(r.row("a"), {default: r.error()}).run();
-  }
-  catch(e) {
-    if (e.message.match(/^No attribute `a` in object:/)) {
-      done()
+  it('`filter` should throw with a non valid option', async function () {
+    try {
+      await r.db(dbName).table(tableName).filter(true, {nonValidKey: false}).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^Unrecognized option `nonValidKey` in `filter` after:/))
     }
-    else {
-      done(e);
-    }
-  }
-})
-It('`filter` should throw if no argument is passed', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter().run();
-  }
-  catch(e) {
-    assert(e instanceof r.Error.ReqlDriverError);
-    assert(e instanceof Error);
-    if (e.message === "`filter` takes at least 1 argument, 0 provided after:\nr.db(\""+dbName+"\").table(\""+tableName+"\")") {
-      done();
-    }
-    else{
-      done(e);
-    }
-  }
-})
-It('`filter` should throw with a non valid option', function* (done) {
-  try {
-    var result = yield r.db(dbName).table(tableName).filter(true, {nonValidKey: false}).run();
-  }
-  catch(e) {
-    if (e.message.match(/^Unrecognized option `nonValidKey` in `filter` after:/)) {
-      done();
-    }
-    else{
-      done(e);
-    }
-  }
+  })
 })
