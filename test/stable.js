@@ -1,86 +1,56 @@
-var config = require(__dirname+'/config.js');
-var r = require(__dirname+'/../lib')(config);
-var assert = require('assert');
+const path = require('path')
+const config = require('./config.js')
+const rethinkdbdash = require(path.join(__dirname, '/../lib'))
+const assert = require('assert')
+const {uuid} = require(path.join(__dirname, '/util/common.js'))
+const {before, after, describe, it} = require('mocha')
 
-var connection; // global connection
-var dbName, tableName, docs;
+describe('stable', () => {
+  let r, dbName, tableName, docs
 
-
-function s4() {
-  return Math.floor((1+Math.random())*0x10000).toString(16).substring(1);
-};
-
-function uuid() {
-  return s4()+s4()+s4()+s4()+s4()+s4()+s4()+s4();
-}
-
-// Tests for callbacks
-it("Create db", function(done) {
-  dbName = uuid();
-
-  r.dbCreate(dbName).run().then(function(result) {
-    assert.equal(result.dbs_created, 1);
-    done();
-  }).error(function(error) {
-    done(error);
+  before(async () => {
+    r = await rethinkdbdash(config)
+    dbName = uuid()
+    tableName = uuid()
   })
-})
 
-it("Create table", function(done) {
-  tableName = uuid();
-
-  r.db(dbName).tableCreate(tableName).run().then(function(result) {
-    assert.equal(result.tables_created, 1);
-    done();
-  }).error(function(error) {
-    done(error);
+  after(async () => {
+    await r.getPoolMaster().drain()
   })
-})
 
-it("Insert", function(done) {
-  r.db(dbName).table(tableName).insert([{name: "Michel", age: 27}, {name: "Sophie", age: 23}]).run().then(function(result) {
-    assert.deepEqual(result.inserted, 2);
-    done();
-  }).error(function(error) {
-    done(error);
+  // Tests for callbacks
+  it('Create db', async function () {
+    const result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
   })
-})
 
+  it('Create table', async function () {
+    const result = await r.db(dbName).tableCreate(tableName).run()
+    assert.equal(result.tables_created, 1)
+  })
 
-it("Table", function(done) {
-  r.db(dbName).table(tableName).run().then(function(result) {
+  it('Insert', async function () {
+    const result = await r.db(dbName).table(tableName).insert([{name: 'Michel', age: 27}, {name: 'Sophie', age: 23}]).run()
+    assert.deepEqual(result.inserted, 2)
+  })
+
+  it('Table', async function () {
+    const result = docs = await r.db(dbName).table(tableName).run()
     assert(result.length, 2)
-    docs = result;
-    done();
-  }).error(function(error) {
-    done(error);
   })
-})
 
-it("get", function(done) {
-  r.db(dbName).table(tableName).get(docs[0].id).run().then(function(result) {
+  it('get', async function () {
+    const result = await r.db(dbName).table(tableName).get(docs[0].id).run()
     assert.deepEqual(result, docs[0])
-    done();
-  }).error(function(error) {
-    done(error);
+  })
+
+  it('datum', async function () {
+    const result = await r.expr({foo: 'bar'}).run()
+    assert.deepEqual(result, {foo: 'bar'})
+  })
+
+  it('date', async function () {
+    const result = await r.now().run()
+    assert(result instanceof Date)
   })
 })
-
-it("datum", function(done) {
-  r.expr({foo: "bar"}).run().then(function(result) {
-    assert.deepEqual(result, {foo: "bar"})
-    done();
-  }).error(function(error) {
-    done(error);
-  })
-})
-
-it("date", function(done) {
-  r.now().run().then(function(result) {
-    assert(result instanceof Date) 
-    done();
-  }).error(function(error) {
-    done(error);
-  })
-})
-
