@@ -1,482 +1,295 @@
-var config = require(__dirname+'/config.js');
-var r = require(__dirname+'/../lib')(config);
-var util = require(__dirname+'/util/common.js');
-var assert = require('assert');
+const path = require('path')
+const config = require(path.join(__dirname, '/config.js'))
+const rethinkdbdash = require(path.join(__dirname, '/../lib'))
+const util = require(path.join(__dirname, '/util/common.js'))
+const assert = require('assert')
+const uuid = util.uuid
+const {before, after, describe, it} = require('mocha')
 
-var uuid = util.uuid;
-var It = util.It;
+describe('control structures', () => {
+  let r
 
-var dbName, tableName, result;
+  before(async () => {
+    r = await rethinkdbdash(config)
+  })
 
-It('`do` should work', function* (done) {
-  try {
-    var result = yield r.expr({a: 1}).do( function(doc) { return doc("a") }).run();
-    assert.equal(result, 1);
+  after(async () => {
+    await r.getPoolMaster().drain()
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`r.do` should work', function* (done) {
-  try {
-    result = yield r.do(1, 2, function(a, b) { return a }).run();
-    assert.equal(result, 1);
+  it('`do` should work', async () => {
+    const result = await r.expr({a: 1}).do(function (doc) { return doc('a') }).run()
+    assert.equal(result, 1)
+  })
 
-    result = yield r.do(1, 2, function(a, b) { return b }).run();
-    assert.equal(result, 2);
+  it('`r.do` should work', async () => {
+    let result = await r.do(1, 2, function (a, b) { return a }).run()
+    assert.equal(result, 1)
 
-    result = yield r.do(3).run();
-    assert.equal(result, 3);
+    result = await r.do(1, 2, function (a, b) { return b }).run()
+    assert.equal(result, 2)
 
-    result = yield r.expr(4).do().run();
-    assert.equal(result, 4);
+    result = await r.do(3).run()
+    assert.equal(result, 3)
 
-    result = yield r.do(1, 2).run()
-    assert.deepEqual(result, 2);
+    result = await r.expr(4).do().run()
+    assert.equal(result, 4)
 
-    result = yield r.do(r.args([ r.expr(3), r.expr(4) ])).run()
-    assert.deepEqual(result, 3);
+    result = await r.do(1, 2).run()
+    assert.deepEqual(result, 2)
 
-    done();
-  }
-  catch(e) {
-    console.log(e)
-    done(e);
-  }
-})
+    result = await r.do(r.args([ r.expr(3), r.expr(4) ])).run()
+    assert.deepEqual(result, 3)
+  })
 
+  it('`branch` should work', async () => {
+    let result = await r.branch(true, 1, 2).run()
+    assert.equal(result, 1)
 
-It('`branch` should work', function* (done) {
-  try {
-    var result = yield r.branch(true, 1, 2).run();
-    assert.equal(result, 1);
+    result = await r.branch(false, 1, 2).run()
+    assert.equal(result, 2)
 
-    result = yield r.branch(false, 1, 2).run();
-    assert.equal(result, 2);
+    result = await r.expr(false).branch('foo', false, 'bar', 'lol').run()
+    assert.equal(result, 'lol')
 
-    result = yield r.expr(false).branch('foo', false, 'bar', 'lol').run()
-    assert.equal(result, 'lol');
+    result = await r.expr(true).branch('foo', false, 'bar', 'lol').run()
+    assert.equal(result, 'foo')
 
-    result = yield r.expr(true).branch('foo', false, 'bar', 'lol').run()
-    assert.equal(result, 'foo');
+    result = await r.expr(false).branch('foo', true, 'bar', 'lol').run()
+    assert.equal(result, 'bar')
+  })
 
-    result = yield r.expr(false).branch('foo', true, 'bar', 'lol').run()
-    assert.equal(result, 'bar');
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`branch` should throw if no argument has been given', function* (done) {
-  try{
-    var result = yield r.branch().run();
-  }
-  catch(e) {
-    if (e.message.match(/^`r.branch` takes at least 3 arguments, 0 provided/)) {
-      done()
+  it('`branch` should throw if no argument has been given', async () => {
+    try {
+      await r.branch().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`r.branch` takes at least 3 arguments, 0 provided/))
     }
-    else {
-      done(e);
-    }
-  }
-})
-It('`branch` should throw if just one argument has been given', function* (done) {
-  try{
-    var result = yield r.branch(true).run();
-  }
-  catch(e) {
-    if (e.message.match(/^`r.branch` takes at least 3 arguments, 1 provided/)) {
-      done()
-    }
-    else {
-      done(e);
-    }
-  }
-})
-It('`branch` should throw if just two arguments have been given', function* (done) {
-  try{
-    var result = yield r.branch(true, true).run();
-  }
-  catch(e) {
-    if (e.message.match(/^`r.branch` takes at least 3 arguments, 2 provided/)) {
-      done()
-    }
-    else {
-      done(e);
-    }
-  }
-})
-It('`branch` is defined after a term', function* (done) {
-  try {
-    result = yield r.expr(true).branch(2, 3).run();
-    assert.equal(result, 2);
-    result = yield r.expr(false).branch(2, 3).run();
-    assert.equal(result, 3);
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`forEach` should work', function* (done) {
-  try{
-    var dbName = uuid();
-    var tableName = uuid();
+  })
 
-    result = yield r.dbCreate(dbName).run();
-    assert.equal(result.dbs_created, 1) 
+  it('`branch` should throw if just one argument has been given', async () => {
+    try {
+      await r.branch(true).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`r.branch` takes at least 3 arguments, 1 provided/))
+    }
+  })
 
-    result = yield r.db(dbName).tableCreate(tableName).run();
-    assert.equal(result.tables_created, 1) 
+  it('`branch` should throw if just two arguments have been given', async () => {
+    try {
+      await r.branch(true, true).run()
+    } catch (e) {
+      assert(e.message.match(/^`r.branch` takes at least 3 arguments, 2 provided/))
+    }
+  })
 
-    result = yield r.expr([{foo: "bar"}, {foo: "foo"}]).forEach(function(doc) {
+  it('`branch` is defined after a term', async () => {
+    let result = await r.expr(true).branch(2, 3).run()
+    assert.equal(result, 2)
+    result = await r.expr(false).branch(2, 3).run()
+    assert.equal(result, 3)
+  })
+
+  it('`forEach` should work', async () => {
+    const dbName = uuid()
+    const tableName = uuid()
+
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
+
+    result = await r.db(dbName).tableCreate(tableName).run()
+    assert.equal(result.tables_created, 1)
+
+    result = await r.expr([{foo: 'bar'}, {foo: 'foo'}]).forEach(function (doc) {
       return r.db(dbName).table(tableName).insert(doc)
-    }).run();
-    assert.equal(result.inserted, 2);
+    }).run()
+    assert.equal(result.inserted, 2)
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`forEach` should throw if not given a function', function* (done) {
-  try{
-    result = yield r.expr([{foo: "bar"}, {foo: "foo"}]).forEach().run();
-  }
-  catch(e) {
-    if (e.message.match(/^`forEach` takes 1 argument, 0 provided after/)) {
-      done();
+  it('`forEach` should throw if not given a function', async () => {
+    try {
+      await r.expr([{foo: 'bar'}, {foo: 'foo'}]).forEach().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`forEach` takes 1 argument, 0 provided after/))
     }
-    else {
-      done(e);
+  })
+
+  it('`r.range(x)` should work', async () => {
+    let result = await r.range(10).run()
+    assert.deepEqual(result, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+  })
+
+  it('`r.range(x, y)` should work', async () => {
+    let result = await r.range(3, 10).run()
+    assert.deepEqual(result, [3, 4, 5, 6, 7, 8, 9])
+  })
+
+  it('`r.range(1,2,3)` should throw - arity', async () => {
+    try {
+      await r.range(1, 2, 3).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`r.range` takes at most 2 arguments, 3 provided/) !== null)
     }
-  }
-})
+  })
 
-It('`r.range(x)` should work', function* (done) {
-  try {
-    var result = yield r.range(10).run();
-    assert.deepEqual(result, [0,1,2,3,4,5,6,7,8,9]);
-
-    done();
-  }
-  catch(e) {
-    console.log(e);
-    done(e);
-  }
-})
-It('`r.range(x, y)` should work', function* (done) {
-  try {
-    var result = yield r.range(3,10).run();
-    assert.deepEqual(result, [3,4,5,6,7,8,9]);
-
-    done();
-  }
-  catch(e) {
-    console.log(e);
-    done(e);
-  }
-})
-It('`r.range(1,2,3)` should throw - arity', function* (done) {
-  try {
-    var result = yield r.range(1,2,3).run()
-    done(new Error("Was expecting an error"));
-  }
-  catch(e) {
-    if (e.message.match(/^`r.range` takes at most 2 arguments, 3 provided/) !== null) {
-      done();
+  it('`r.range()` should throw - arity', async () => {
+    try {
+      await r.range().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`r.range` takes at least 1 argument, 0 provided/) !== null)
     }
-    else {
-      done(e);
+  })
+
+  it('`default` should work', async () => {
+    const result = await r.expr({a: 1})('b').default('Hello').run()
+    assert.equal(result, 'Hello')
+  })
+  it('`default` should throw if no argument has been given', async () => {
+    try {
+      await r.expr({})('').default().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`default` takes 1 argument, 0 provided after/))
     }
-  }
-})
-It('`r.range()` should throw - arity', function* (done) {
-  try {
-    var result = yield r.range().run()
-    done(new Error("Was expecting an error"));
-  }
-  catch(e) {
-    if (e.message.match(/^`r.range` takes at least 1 argument, 0 provided/) !== null) {
-      done();
+  })
+
+  it('`r.js` should work', async () => {
+    const result = await r.js('1').run()
+    assert.equal(result, 1)
+  })
+
+  it('`js` is not defined after a term', async () => {
+    try {
+      await r.expr(1).js('foo').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message === '`js` is not defined after:\nr.expr(1)')
     }
-    else {
-      done(e);
+  })
+
+  it('`js` should throw if no argument has been given', async () => {
+    try {
+      await r.js().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`r.js` takes at least 1 argument, 0 provided/))
     }
-  }
-})
+  })
 
-It('`default` should work', function* (done) {
-  try {
-    var result = yield r.expr({a:1})("b").default("Hello").run();
-    assert.equal(result, "Hello");
+  it('`coerceTo` should work', async () => {
+    const result = await r.expr(1).coerceTo('STRING').run()
+    assert.equal(result, '1')
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`default` should throw if no argument has been given', function* (done) {
-  try{
-    var result = yield r.expr({})("").default().run();
-  }
-  catch(e) {
-    if (e.message.match(/^`default` takes 1 argument, 0 provided after/)) {
-      done()
+  it('`coerceTo` should throw if no argument has been given', async () => {
+    try {
+      await r.expr(1).coerceTo().run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`coerceTo` takes 1 argument, 0 provided/))
     }
-    else {
-      done(e);
-    }
-  }
-})
+  })
 
+  it('`typeOf` should work', async () => {
+    const result = await r.expr(1).typeOf().run()
+    assert.equal(result, 'NUMBER')
+  })
 
-It('`r.js` should work', function* (done) {
-  try {
-    var result = yield r.js("1").run();
-    assert.equal(result, 1);
+  it('`r.typeOf` should work', async () => {
+    const result = await r.typeOf(1).run()
+    assert.equal(result, 'NUMBER')
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`js` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).js("foo").run();
-  }
-  catch(e) {
-    if (e.message === "`js` is not defined after:\nr.expr(1)") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`js` should throw if no argument has been given', function* (done) {
-  try{
-    var result = yield r.js().run();
-  }
-  catch(e) {
-    if (e.message.match(/^`r.js` takes at least 1 argument, 0 provided/)) {
-      done()
-    }
-    else {
-      done(e);
-    }
-  }
-})
+  it('`json` should work', async () => {
+    let result = await r.json(JSON.stringify({a: 1})).run()
+    assert.deepEqual(result, {a: 1})
 
-
-It('`coerceTo` should work', function* (done) {
-  try {
-    var result = yield r.expr(1).coerceTo("STRING").run();
-    assert.equal(result, "1");
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`coerceTo` should throw if no argument has been given', function* (done) {
-  try{
-    var result = yield r.expr(1).coerceTo().run();
-  }
-  catch(e) {
-    if (e.message.match(/^`coerceTo` takes 1 argument, 0 provided/)) {
-      done()
-    }
-    else {
-      done(e);
-    }
-  }
-})
-
-It('`typeOf` should work', function* (done) {
-  try {
-    var result = yield r.expr(1).typeOf().run();
-    assert.equal(result, "NUMBER");
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`r.typeOf` should work', function* (done) {
-  try {
-    var result = yield r.typeOf(1).run();
-    assert.equal(result, "NUMBER");
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-
-It('`json` should work', function* (done) {
-  try {
-    var result = yield r.json(JSON.stringify({a:1})).run();
-    assert.deepEqual(result, {a:1});
-
-    result = yield r.json("{}").run();
+    result = await r.json('{}').run()
     assert.deepEqual(result, {})
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`json` should throw if no argument has been given', function* (done) {
-  try{
-    var result = yield r.json().run();
-  }
-  catch(e) {
-    if (e.message === "`r.json` takes 1 argument, 0 provided.") {
-      done()
+  it('`json` should throw if no argument has been given', async () => {
+    try {
+      await r.json().run()
+      assert.fail('throw')
+    } catch (e) {
+      assert(e.message === '`r.json` takes 1 argument, 0 provided.')
     }
-    else {
-      done(e);
-    }
-  }
-})
-It('`json` is not defined after a term', function* (done) {
-  try {
-    result = yield r.expr(1).json("1").run();
-  }
-  catch(e) {
-    if (e.message.match(/^`json` is not defined after/)) {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`toJSON` and `toJsonString` should work', function* (done) {
-  try {
-    var result = yield r.expr({a:1}).toJSON().run();
-    assert.equal(result, '{"a":1}');
+  })
 
-    var result = yield r.expr({a:1}).toJsonString().run();
-    assert.equal(result, '{"a":1}');
-
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
-It('`toJSON` should throw if an argument is provided', function* (done) {
-  try {
-    var result = yield r.expr({a:1}).toJSON('foo').run();
-    done(new Error("Expecting error..."));
-  }
-  catch(e) {
-    if (e.message.match(/^`toJSON` takes 0 argument, 1 provided/) !== null) {
-      done()
+  it('`json` is not defined after a term', async () => {
+    try {
+      await r.expr(1).json('1').run()
+    } catch (e) {
+      assert(e.message.match(/^`json` is not defined after/))
     }
-    else {
-      done(e)
+  })
+
+  it('`toJSON` and `toJsonString` should work', async () => {
+    let result = await r.expr({a: 1}).toJSON().run()
+    assert.equal(result, '{"a":1}')
+
+    result = await r.expr({a: 1}).toJsonString().run()
+    assert.equal(result, '{"a":1}')
+  })
+
+  it('`toJSON` should throw if an argument is provided', async () => {
+    try {
+      await r.expr({a: 1}).toJSON('foo').run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message.match(/^`toJSON` takes 0 argument, 1 provided/) !== null)
     }
-  }
-})
+  })
 
-It('`args` should work', function* (done) {
-  try {
-    var result = yield r.args([10, 20, 30]).run();
-    assert.deepEqual(result, [10, 20, 30]);
+  it('`args` should work', async () => {
+    let result = await r.args([10, 20, 30]).run()
+    assert.deepEqual(result, [10, 20, 30])
 
-    result = yield r.expr({foo: 1, bar: 2, buzz: 3}).pluck(r.args(["foo", "buzz"])).run()
-    assert.deepEqual(result, {foo: 1, buzz: 3});
+    result = await r.expr({foo: 1, bar: 2, buzz: 3}).pluck(r.args(['foo', 'buzz'])).run()
+    assert.deepEqual(result, {foo: 1, buzz: 3})
+  })
 
-    done();
-  }
-  catch(e) {
-    console.log(e)
-    done(e)
-  }
-})
-It('`args` should throw if an implicit var is passed inside', function* (done) {
-  try {
-    var cursor = yield r.table("foo").eqJoin(r.args([r.row, r.table("bar")])).run();
-    done();
-  }
-  catch(e) {
-    if (e.message === 'Implicit variable `r.row` cannot be used inside `r.args`.') {
-      done();
+  it('`args` should throw if an implicit var is passed inside', async () => {
+    try {
+      await r.table('foo').eqJoin(r.args([r.row, r.table('bar')])).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message === 'Implicit variable `r.row` cannot be used inside `r.args`.')
     }
-    else {
-      done(e);
+  })
+
+  it('`http` should work', async () => {
+    const result = await r.http('http://google.com').run()
+    assert.equal(typeof result, 'string')
+  })
+
+  it('`http` should work with options', async () => {
+    const result = await r.http('http://google.com', {timeout: 60}).run()
+    assert.equal(typeof result, 'string')
+  })
+
+  it('`http` should throw with an unrecognized option', async () => {
+    try {
+      await r.http('http://google.com', {foo: 60}).run()
+      assert.fail('should throw')
+    } catch (e) {
+      assert(e.message === 'Unrecognized option `foo` in `http`. Available options are attempts <number>, redirects <number>, verify <boolean>, resultFormat: <string>, method: <string>, auth: <object>, params: <object>, header: <string>, data: <string>, page: <string/function>, pageLimit: <number>.')
     }
-  }
-})
-It('`http` should work', function* (done) {
-  try {
-    var result = yield r.http('http://google.com').run();
-    assert.equal(typeof result, 'string');
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e)
-  }
-})
-It('`http` should work with options', function* (done) {
-  try {
-    var result = yield r.http('http://google.com', {timeout: 60}).run();
-    assert.equal(typeof result, 'string');
+  it('`r.uuid` should work', async () => {
+    const result = await r.uuid().run()
+    assert.equal(typeof result, 'string')
+  })
 
-    done();
-  }
-  catch(e) {
-    done(e)
-  }
-})
-It('`http` should throw with an unrecognized option', function* (done) {
-  try {
-    var result = yield r.http('http://google.com', {foo: 60}).run();
-    done(new Error("Expecting error..."));
-  }
-  catch(e) {
-    if (e.message === "Unrecognized option `foo` in `http`. Available options are attempts <number>, redirects <number>, verify <boolean>, resultFormat: <string>, method: <string>, auth: <object>, params: <object>, header: <string>, data: <string>, page: <string/function>, pageLimit: <number>.") {
-      done()
-    }
-    else {
-      done(e)
-    }
-  }
-})
-It('`r.uuid` should work', function* (done) {
-  try {
-    var result = yield r.uuid().run();
-    assert.equal(typeof result, 'string');
-
-    done();
-  }
-  catch(e) {
-    done(e)
-  }
-})
-
-It('`r.uuid("foo")` should work', function* (done) {
-  try {
-    var result = yield r.uuid("rethinkdbdash").run();
-    assert.equal(result, '291a8039-bc4b-5472-9b2a-f133254e3283');
-    done();
-  }
-  catch(e) {
-    done(e)
-  }
+  it('`r.uuid("foo")` should work', async () => {
+    const result = await r.uuid('rethinkdbdash').run()
+    assert.equal(result, '291a8039-bc4b-5472-9b2a-f133254e3283')
+  })
 })

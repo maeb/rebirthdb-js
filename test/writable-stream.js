@@ -1,174 +1,158 @@
-var config = require('./config.js');
-var r = require('../lib')(config);
-var util = require(__dirname+'/util/common.js');
-var assert = require('assert');
-var Readable = require('stream').Readable;
-var _util = require('util');
+const path = require('path')
+const config = require('./config.js')
+const rethinkdbdash = require(path.join(__dirname, '/../lib'))
+const assert = require('assert')
+const {uuid} = require(path.join(__dirname, '/util/common.js'))
+const {before, after, describe, it} = require('mocha')
+const {Readable} = require('stream')
 
-var uuid = util.uuid;
-var It = util.It
+describe('writable streams', () => {
+  let r, dbName, tableName, dumpTable
+  const numDocs = 100
 
-var dbName, tableName, tableName2, stream, result, pks, feed, dumpTable;
+  before(async () => {
+    r = await rethinkdbdash(config)
+    dbName = uuid()
+    tableName = uuid()
 
-var numDocs = 100; // Number of documents in the "big table" used to test the SUCCESS_PARTIAL 
+    dumpTable = uuid() // dump table
 
-// TODO: Tests are flaky with a slow server. Rewrite them with a fake server.
-It('Init for `writable-stream.js`', function* (done) {
-  try {
-    dbName = uuid();
-    tableName = uuid(); // Big table to test partial sequence
-    dumpTable = uuid(); // dump table
+    let result = await r.dbCreate(dbName).run()
+    assert.equal(result.dbs_created, 1)
 
-    result = yield r.dbCreate(dbName).run()
-    assert.equal(result.dbs_created, 1);
-    //yield r.db(dbName).wait().run()
-    result = yield [
+    // await r.db(dbName).wait().run()
+    result = await Promise.all([
       r.db(dbName).tableCreate(tableName)('tables_created').run(),
-      r.db(dbName).tableCreate(dumpTable)('tables_created').run()]
-    assert.deepEqual(result, [1, 1]);
-    done();
-  }
-  catch(e) {
-    console.log(e);
-    done(e);
-  }
-})
-It('Inserting batch - table 1', function* (done) {
-  try {
-    result = yield r.db(dbName).table(tableName).insert(eval('['+new Array(numDocs).join('{}, ')+'{}]')).run();
-    assert.equal(result.inserted, numDocs);
-    done();
-  }
-  catch(e) {
-    done(e);
-  }
-})
+      r.db(dbName).tableCreate(dumpTable)('tables_created').run()])
+    assert.deepEqual(result, [1, 1])
 
-It('test pipe writable - fast input', function* (done) {
-  var stream = new Readable({objectMode: true});
-  var size = 35;
-  var value = uuid();
-  for(var i=0; i<size; i++) {
-    stream.push({field: value});
-  }
-  stream.push(null);
-  var table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 10});
-  stream.pipe(table)
-    .on('error', done)
-    .on('finish', function() {
-      r.db(dbName).table(dumpTable).filter({field: value}).count().run().then(function(result) {
-        assert.deepEqual(result, size);
-        assert.deepEqual(table._sequence, [10, 10, 10, 5])
-        done();
-      });
-    });
-})
+    result = await r.db(dbName).table(tableName).insert(Array(numDocs).fill({})).run()
+    assert.equal(result.inserted, numDocs)
+  })
 
-It('test pipe writable - slow input - 1', function* (done) {
-  var stream = new Readable({objectMode: true});
-  var size = 10;
-  var values = [uuid(), uuid()];
-  var table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5});
+  after(async () => {
+    await r.getPool().drain()
+  })
 
-  var i = 0;
-  stream._read = function() {
-    var self = this;
-    i++;
-    if (i <= 3) {
-      self.push({field: values[0]});
+  it('test pipe writable - fast input', function (done) {
+    const stream = new Readable({objectMode: true})
+    const size = 35
+    const value = uuid()
+    for (let i = 0; i < size; i++) {
+      stream.push({field: value})
     }
-    else if (i === 4) {
-      setTimeout(function() {
-        self.push({field: values[1]});
-      }, 3000)
-    }
-    else if (i <= 10) {
-      self.push({field: values[1]});
-    }
-    else {
-      self.push(null);
-    }
-  }
+    stream.push(null)
+    const table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 10})
+    stream.pipe(table)
+      .on('error', done)
+      .on('finish', function () {
+        r.db(dbName).table(dumpTable).filter({field: value}).count().run().then(function (result) {
+          assert.deepEqual(result, size)
+          assert.deepEqual(table._sequence, [10, 10, 10, 5])
+          done()
+        })
+      })
+  })
 
-  stream.pipe(table)
-    .on('error', done)
-    .on('finish', function() {
-      r.expr([
-        r.db(dbName).table(dumpTable).filter({field: values[0]}).count(),
-        r.db(dbName).table(dumpTable).filter({field: values[1]}).count()
-      ]).run().then(function(result) {
-        assert.deepEqual(result, [3, 7]);
-        assert.deepEqual(table._sequence, [3, 5, 2])
-        done();
-      });
-    });
-})
-It('test pipe writable - slow input - 2', function* (done) {
-  var stream = new Readable({objectMode: true});
-  var size = 10;
-  var values = [uuid(), uuid()];
-  var table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5});
+  it('test pipe writable - slow input - 1', function (done) {
+    const stream = new Readable({objectMode: true})
 
-  var i = 0;
-  stream._read = function() {
-    var self = this;
-    i++;
-    if (i <= 5) {
-      self.push({field: values[0]});
-    }
-    else if (i === 6) {
-      setTimeout(function() {
-        self.push({field: values[1]});
-      }, 3000)
-    }
-    else if (i <= 10) {
-      self.push({field: values[1]});
-    }
-    else {
-      self.push(null);
-    }
-  }
+    const values = [uuid(), uuid()]
+    const table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5})
 
-  stream.pipe(table)
-    .on('error', done)
-    .on('finish', function() {
-      r.expr([
-        r.db(dbName).table(dumpTable).filter({field: values[0]}).count(),
-        r.db(dbName).table(dumpTable).filter({field: values[1]}).count()
-      ]).run().then(function(result) {
-        assert.deepEqual(result, [5, 5]);
-        assert.deepEqual(table._sequence, [5, 5])
-        done();
-      });
-    });
-})
-It('test pipe writable - single insert', function* (done) {
-  var stream = new Readable({objectMode: true});
-  var size = 10;
-  var value = uuid();
-  var table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5});
-
-  var i = 0;
-  stream._read = function() {
-    i++;
-    if (i > 10) {
-      this.push(null);
+    let i = 0
+    stream._read = function () {
+      const self = this
+      i++
+      if (i <= 3) {
+        self.push({field: values[0]})
+      } else if (i === 4) {
+        setTimeout(function () {
+          self.push({field: values[1]})
+        }, 3000)
+      } else if (i <= 10) {
+        self.push({field: values[1]})
+      } else {
+        self.push(null)
+      }
     }
-    else {
-      var self = this;
-      setTimeout(function() {
-        self.push({field: value});
-      }, 50);
-    }
-  }
 
-  stream.pipe(table)
-    .on('error', done)
-    .on('finish', function() {
-      r.expr(r.db(dbName).table(dumpTable).filter({field: value}).count()).run().then(function(result) {
-        assert.deepEqual(result, 10);
-        assert.deepEqual(table._sequence, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-        done();
-      });
-    });
+    stream.pipe(table)
+      .on('error', done)
+      .on('finish', function () {
+        r.expr([
+          r.db(dbName).table(dumpTable).filter({field: values[0]}).count(),
+          r.db(dbName).table(dumpTable).filter({field: values[1]}).count()
+        ]).run().then(function (result) {
+          assert.deepEqual(result, [3, 7])
+          assert.deepEqual(table._sequence, [3, 5, 2])
+          done()
+        })
+      })
+  })
+
+  it('test pipe writable - slow input - 2', function (done) {
+    const stream = new Readable({objectMode: true})
+    const values = [uuid(), uuid()]
+    const table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5})
+
+    let i = 0
+    stream._read = function () {
+      const self = this
+      i++
+      if (i <= 5) {
+        self.push({field: values[0]})
+      } else if (i === 6) {
+        setTimeout(function () {
+          self.push({field: values[1]})
+        }, 3000)
+      } else if (i <= 10) {
+        self.push({field: values[1]})
+      } else {
+        self.push(null)
+      }
+    }
+
+    stream.pipe(table)
+      .on('error', done)
+      .on('finish', function () {
+        r.expr([
+          r.db(dbName).table(dumpTable).filter({field: values[0]}).count(),
+          r.db(dbName).table(dumpTable).filter({field: values[1]}).count()
+        ]).run().then(function (result) {
+          assert.deepEqual(result, [5, 5])
+          assert.deepEqual(table._sequence, [5, 5])
+          done()
+        })
+      })
+  })
+
+  it('test pipe writable - single insert', function (done) {
+    const stream = new Readable({objectMode: true})
+    const value = uuid()
+    const table = r.db(dbName).table(dumpTable).toStream({writable: true, debug: true, highWaterMark: 5})
+
+    let i = 0
+    stream._read = function () {
+      i++
+      if (i > 10) {
+        this.push(null)
+      } else {
+        const self = this
+        setTimeout(function () {
+          self.push({field: value})
+        }, 50)
+      }
+    }
+
+    stream.pipe(table)
+      .on('error', done)
+      .on('finish', function () {
+        r.expr(r.db(dbName).table(dumpTable).filter({field: value}).count()).run().then(function (result) {
+          assert.deepEqual(result, 10)
+          assert.deepEqual(table._sequence, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+          done()
+        })
+      })
+  })
 })
