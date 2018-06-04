@@ -1,0 +1,13 @@
+sudo: required
+
+services:
+  - docker
+
+language: node_js
+
+node_js:
+  - "8"
+
+before_install:
+  - docker pull rethinkdb:latest
+  - docker run -d -p 28015:28015 rethinkdb
