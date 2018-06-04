@@ -57,15 +57,15 @@ describe('pool legacy', () => {
   it('A noreply query should release the connection', async function () {
     const numConnections = r.getPool().getLength()
     await r.expr(1).run({noreply: true})
-    assert.equal(numConnections, r.getPool().getLength(), 'expected number of connections be equal before and after a noreply query')
+    assert.equal(numConnections, r.getPool().getLength(), 'number of connections differ before and after a noreply query')
   })
 
   it('The pool should not have more than `options.max` connections', async function () {
     const result = await Promise.all(Array(options.max + 1).fill(r.expr(1)).map((expr) => expr.run()))
     assert.deepEqual(result, Array(options.max + 1).fill(1))
-    // assert.equal(r.getPool().getLength(), options.max)
-    assert.ok(r.getPool().getAvailableLength() <= options.max, 'available connections more than max')
-    assert.equal(r.getPool().getAvailableLength(), r.getPool().getLength(), 'expected available connections to equal pool size')
+    assert.equal(options.max, r.getPool().getLength())
+    assert.ok(options.max >= r.getPool().getAvailableLength())
+    assert.equal(r.getPool().getAvailableLength(), r.getPool().getLength())
   })
 
   it('The pool should shrink if a connection is not used for some time', async function () {
