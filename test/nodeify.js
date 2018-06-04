@@ -127,6 +127,7 @@ describe('nodeify', () => {
         cursor.toArray(function (err, result) {
           assert.ifError(err)
           assert.deepEqual(result, [1, 2, 3])
+          cursor.close()
         })
       })
     })
@@ -137,6 +138,7 @@ describe('nodeify', () => {
         cursor.next(function (err, result) {
           assert.ifError(err)
           assert.deepEqual(result, 1)
+          cursor.close()
         })
       })
     })
