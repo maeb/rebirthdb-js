@@ -1,7 +1,7 @@
 rethinkdbdash
 -------------
 
-[![Build Status](https://travis-ci.org/rebirthdb/rebirthdb-js.svg?branch=master)](https://travis-ci.org/maeb/rebirthdb-js)
+[![Build Status](https://travis-ci.org/rebirthdb/rebirthdb-js.svg?branch=master)](https://travis-ci.org/rebirthdb/rebirthdb-js)
 
 A Node.js driver for RethinkDB with more advanced features.
 
