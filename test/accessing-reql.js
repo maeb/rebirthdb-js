@@ -21,14 +21,6 @@ describe('accessing-reql', function () {
       connection = await r.connect(config)
       assert(connection.open)
     }
-    // remove any dbs created between each test case
-    for (dbName of await r.dbList().run(connection)) {
-      if (dbName === 'rethinkdb' || dbName === 'test') {
-        continue
-      } else {
-        await r.dbDrop(dbName).run(connection)
-      }
-    }
 
     await connection.close()
     assert(!connection.open)

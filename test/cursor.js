@@ -21,19 +21,6 @@ describe('cursor', () => {
     tableName = uuid() // Big table to test partial sequence
     tableName2 = uuid() // small table to test success sequence
 
-    // delete all but the system dbs
-    for (let db of await r.dbList().run()) {
-      if (db === 'rethinkdb' || db === 'test') {
-        continue
-      } else {
-        try {
-          await r.dbDrop(db).run()
-        } catch (error) {
-          assert.fail(error)
-        }
-      }
-    }
-
     let result = await r.dbCreate(dbName).run()
     assert.equal(result.dbs_created, 1)
     result = await r.db(dbName).tableCreate(tableName).run()
