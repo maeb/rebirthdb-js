@@ -7,14 +7,14 @@ const uuid = util.uuid
 const {before, after, describe, it} = require('mocha')
 
 describe('backtraces', () => {
-  let r, dbName, tableName, result
+  let r, dbName, tableName
 
   before(async () => {
     r = await rethinkdbdash(config)
     dbName = uuid()
     tableName = uuid()
 
-    result = await r.dbCreate(dbName).run()
+    let result = await r.dbCreate(dbName).run()
     assert.equal(result.dbs_created, 1)
 
     result = await r.db(dbName).tableCreate(tableName).run()

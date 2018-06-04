@@ -1,7 +1,5 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/config.js'))
-const rethinkdbdash = require(path.join(__dirname, '/../lib'))
-const rethinkdb_ = require(path.join(__dirname, '/../lib'))
 const assert = require('assert')
 const {before, after, describe, it} = require('mocha')
 
@@ -9,7 +7,11 @@ describe('multiple require', () => {
   let r1, r2
 
   before(async () => {
+    const rethinkdbdash = require(path.join(__dirname, '/../lib'))
     r1 = await rethinkdbdash(config)
+
+    delete require.cache[require.resolve(path.join(__dirname, '/../lib'))]
+    const rethinkdb_ = require(path.join(__dirname, '/../lib'))
     r2 = await rethinkdb_(config)
   })
 

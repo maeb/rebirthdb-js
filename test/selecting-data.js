@@ -5,7 +5,7 @@ const assert = require('assert')
 const {uuid} = require(path.join(__dirname, '/util/common.js'))
 const {before, after, describe, it} = require('mocha')
 
-describe('pool legacy', () => {
+describe('selecting data', () => {
   let r, dbName, tableName, pks
 
   before(async () => {

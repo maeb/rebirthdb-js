@@ -9,7 +9,7 @@ const {beforeEach, afterEach, describe, it} = require('mocha')
 
 describe('accessing-reql', function () {
   let connection // global connection
-  let dbName, tableName, result
+  let dbName, tableName
 
   beforeEach(async () => {
     connection = await r.connect(config)
@@ -29,26 +29,27 @@ describe('accessing-reql', function () {
         await r.dbDrop(dbName).run(connection)
       }
     }
+
     await connection.close()
     assert(!connection.open)
   })
 
-  it('`run` should throw an error when called without connection', async () => {
+  it('`run` should throw when called without connection', async () => {
     try {
       await r.expr(1).run()
-      assert.fail('shold throw an error')
+      assert.fail('should throw')
     } catch (e) {
       assert.equal(e.message, '`run` was called without a connection and no pool has been created after:\nr.expr(1)')
     }
   })
 
-  it('`run` should throw an error when called with a closed connection', async () => {
+  it('`run` should throw when called with a closed connection', async () => {
     try {
       connection.close()
       assert(!connection.open)
 
       await r.expr(1).run(connection)
-      assert.fail('should throw an error')
+      assert.fail('should throw')
     } catch (e) {
       assert.equal(e.message, '`run` was called with a closed connection after:\nr.expr(1)')
     }
@@ -58,8 +59,7 @@ describe('accessing-reql', function () {
     dbName = uuid()
     tableName = uuid()
 
-    assert(connection.open)
-    result = await r.dbCreate(dbName).run(connection)
+    let result = await r.dbCreate(dbName).run(connection)
     assert.equal(result.config_changes.length, 1)
     assert.equal(result.dbs_created, 1)
 
@@ -85,7 +85,7 @@ describe('accessing-reql', function () {
     dbName = uuid()
     tableName = uuid()
 
-    var result = await r.dbCreate(dbName).run(connection)
+    let result = await r.dbCreate(dbName).run(connection)
     assert.equal(result.dbs_created, 1)
 
     result = await r.db(dbName).tableCreate(tableName).run(connection)
@@ -105,7 +105,7 @@ describe('accessing-reql', function () {
     dbName = uuid()
     tableName = uuid()
 
-    var result = await r.dbCreate(dbName).run(connection)
+    let result = await r.dbCreate(dbName).run(connection)
     assert.equal(result.dbs_created, 1)
 
     result = await r.db(dbName).tableCreate(tableName).run(connection)
@@ -126,11 +126,10 @@ describe('accessing-reql', function () {
   })
 
   it('`reconnect` should work with options', async function () {
-    assert(connection.open)
     connection = await connection.reconnect({noreplyWait: true})
     assert(connection.open)
 
-    result = await r.expr(1).run(connection)
+    let result = await r.expr(1).run(connection)
     assert.equal(result, 1)
 
     connection = await connection.reconnect({noreplyWait: false})
@@ -149,7 +148,7 @@ describe('accessing-reql', function () {
   it('`noReplyWait` should throw', async function () {
     try {
       await connection.noReplyWait()
-      assert.fail('should throw an error')
+      assert.fail('should throw')
     } catch (e) {
       assert.equal(e.message, 'Did you mean to use `noreplyWait` instead of `noReplyWait`?')
     }
@@ -163,7 +162,7 @@ describe('accessing-reql', function () {
     await r.dbCreate(dbName).run(connection)
     await r.db(dbName).tableCreate(tableName).run(connection)
 
-    result = await r.db(dbName).table(tableName).insert(largeishObject).run(connection, {noreply: true})
+    let result = await r.db(dbName).table(tableName).insert(largeishObject).run(connection, {noreply: true})
     assert.equal(result, undefined)
 
     result = await r.db(dbName).table(tableName).count().run(connection)
@@ -177,7 +176,7 @@ describe('accessing-reql', function () {
   })
 
   it('`run` should take an argument', async function () {
-    result = await r.expr(1).run(connection, {readMode: 'primary'})
+    let result = await r.expr(1).run(connection, {readMode: 'primary'})
     assert.equal(result, 1)
 
     result = await r.expr(1).run(connection, {readMode: 'majority'})
@@ -199,20 +198,20 @@ describe('accessing-reql', function () {
 
   it('`run` should throw on an unrecognized argument', async function () {
     try {
-      result = await r.expr(1).run(connection, {foo: 'bar'})
-      assert.fail('should throw an error')
+      await r.expr(1).run(connection, {foo: 'bar'})
+      assert.fail('should throw')
     } catch (e) {
       assert.equal(e.message, 'Unrecognized option `foo` in `run`. Available options are readMode <string>, durability <string>, noreply <bool>, timeFormat <string>, groupFormat: <string>, profile <bool>, binaryFormat <bool>, cursor <bool>, stream <bool>.')
     }
   })
 
   it('`r()` should be a shortcut for r.expr()', async function () {
-    result = await r(1).run(connection)
+    const result = await r(1).run(connection)
     assert.deepEqual(result, 1)
   })
 
   it('`timeFormat` should work', async function () {
-    result = await r.now().run(connection)
+    let result = await r.now().run(connection)
     assert(result instanceof Date)
 
     result = await r.now().run(connection, {timeFormat: 'native'})
@@ -223,12 +222,12 @@ describe('accessing-reql', function () {
   })
 
   it('`binaryFormat` should work', async function () {
-    result = await r.binary(Buffer.from([1, 2, 3])).run(connection, {binaryFormat: 'raw'})
+    const result = await r.binary(Buffer.from([1, 2, 3])).run(connection, {binaryFormat: 'raw'})
     assert.equal(result.$reql_type$, 'BINARY')
   })
 
   it('`groupFormat` should work', async function () {
-    result = await r.expr([
+    const result = await r.expr([
       {name: 'Michel', grownUp: true},
       {name: 'Laurent', grownUp: true},
       {name: 'Sophie', grownUp: true},
@@ -240,7 +239,7 @@ describe('accessing-reql', function () {
   })
 
   it('`profile` should work', async function () {
-    result = await r.expr(true).run(connection, {profile: false})
+    let result = await r.expr(true).run(connection, {profile: false})
     assert(result)
 
     result = await r.expr(true).run(connection, {profile: true})
@@ -262,7 +261,7 @@ describe('accessing-reql', function () {
         port: port,
         timeout: 1
       })
-      assert.fail('should throw an error')
+      assert.fail('should throw')
     } catch (err) {
       await server.close()
 
@@ -271,7 +270,7 @@ describe('accessing-reql', function () {
   })
 
   it('`server` should work', async function () {
-    var response = await connection.server()
+    const response = await connection.server()
     assert(typeof response.name === 'string')
     assert(typeof response.id === 'string')
   })
@@ -280,7 +279,7 @@ describe('accessing-reql', function () {
     const restrictedDbName = uuid()
     const restrictedTableName = uuid()
 
-    result = await r.dbCreate(restrictedDbName).run(connection)
+    let result = await r.dbCreate(restrictedDbName).run(connection)
     assert.equal(result.config_changes.length, 1)
     assert.equal(result.dbs_created, 1)
 
@@ -293,6 +292,7 @@ describe('accessing-reql', function () {
       id: user,
       password: password
     }).run(connection)
+    assert.equal(result.inserted, 1)
     result = await r.db(restrictedDbName).table(restrictedTableName).grant(user, {
       read: true, write: true, config: true
     }).run(connection)
@@ -314,15 +314,15 @@ describe('accessing-reql', function () {
       require(path.join(__dirname, '/../lib'))({
         servers: []
       })
-      assert.fail('should throw an error')
+      assert.fail('should throw')
     } catch (e) {
       assert.equal(e.message, 'If `servers` is an array, it must contain at least one server.')
     }
   })
 
   it('should not throw an error (since 1.13, the token is now stored outside the query): `connection` should extend events.Emitter and emit an error if the server failed to parse the protobuf message', async function () {
-    connection.addListener('error', () => assert.fail('should not throw'))
-    result = await Array(687).fill(1).reduce((acc, curr) => acc.add(curr), r.expr(1)).run(connection)
+    connection.addListener('error', assert.ifError)
+    const result = await Array(687).fill(1).reduce((acc, curr) => acc.add(curr), r.expr(1)).run(connection)
     assert.equal(result, 688)
   })
 })

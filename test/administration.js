@@ -7,7 +7,7 @@ const uuid = util.uuid
 const {before, after, describe, it} = require('mocha')
 
 describe('administration', () => {
-  let r, dbName, tableName, result
+  let r, dbName, tableName
 
   before(async () => {
     r = await rethinkdbdash(config)
@@ -15,7 +15,7 @@ describe('administration', () => {
     dbName = uuid()
     tableName = uuid()
 
-    result = await r.dbCreate(dbName).run()
+    let result = await r.dbCreate(dbName).run()
     assert.equal(result.dbs_created, 1)
 
     result = await r.db(dbName).tableCreate(tableName).run()
@@ -31,7 +31,7 @@ describe('administration', () => {
   })
 
   it('`config` should work', async function () {
-    result = await r.db(dbName).config().run()
+    let result = await r.db(dbName).config().run()
     assert.equal(result.name, dbName)
 
     result = await r.db(dbName).table(tableName).config().run()
@@ -48,7 +48,7 @@ describe('administration', () => {
   })
 
   it('`status` should work', async function () {
-    result = await r.db(dbName).table(tableName).status().run()
+    const result = await r.db(dbName).table(tableName).status().run()
     assert.equal(result.name, tableName)
     assert.notEqual(result.status, undefined)
   })
@@ -63,12 +63,12 @@ describe('administration', () => {
   })
 
   it('`wait` should work', async function () {
-    result = await r.db(dbName).table(tableName).wait().run()
+    const result = await r.db(dbName).table(tableName).wait().run()
     assert.equal(result.ready, 1)
   })
 
   it('`wait` should work with options', async function () {
-    result = await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes'}).run()
+    let result = await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes'}).run()
     assert.equal(result.ready, 1)
 
     result = await r.db(dbName).table(tableName).wait({waitFor: 'ready_for_writes', timeout: 2000}).run()
@@ -94,18 +94,18 @@ describe('administration', () => {
   })
 
   it('`reconfigure` should work - 1', async function () {
-    result = await r.db(dbName).table(tableName).reconfigure({shards: 1, replicas: 1}).run()
+    const result = await r.db(dbName).table(tableName).reconfigure({shards: 1, replicas: 1}).run()
     assert.equal(result.reconfigured, 1)
   })
 
   it('`reconfigure` should work - 2 - dryRun', async function () {
-    result = await r.db(dbName).table(tableName).reconfigure({shards: 1, replicas: 1, dryRun: true}).run()
+    const result = await r.db(dbName).table(tableName).reconfigure({shards: 1, replicas: 1, dryRun: true}).run()
     assert.equal(result.reconfigured, 0)
   })
 
   it('`r.reconfigure` should throw', async function () {
     try {
-      result = await r.reconfigure().run()
+      await r.reconfigure().run()
       assert.fail('should throw')
     } catch (e) {
       assert(e.message.match(/^`reconfigure` can only be called on a table or a database since 2.3./))
@@ -114,7 +114,7 @@ describe('administration', () => {
 
   it('`reconfigure` should throw on an unrecognized key', async function () {
     try {
-      result = await r.db(dbName).table(tableName).reconfigure({foo: 1}).run()
+      await r.db(dbName).table(tableName).reconfigure({foo: 1}).run()
       assert.fail('should throw')
     } catch (e) {
       assert(e.message.match(/^Unrecognized option `foo` in `reconfigure` after:/))
@@ -123,7 +123,7 @@ describe('administration', () => {
 
   it('`reconfigure` should throw on a number', async function () {
     try {
-      result = await r.db(dbName).table(tableName).reconfigure(1).run()
+      await r.db(dbName).table(tableName).reconfigure(1).run()
       assert.fail('should throw')
     } catch (e) {
       assert(e.message.match(/^First argument of `reconfigure` must be an object./))
@@ -131,13 +131,13 @@ describe('administration', () => {
   })
 
   it('`rebalanced` should work - 1', async function () {
-    result = await r.db(dbName).table(tableName).rebalance().run()
+    const result = await r.db(dbName).table(tableName).rebalance().run()
     assert.equal(result.rebalanced, 1)
   })
 
   it('`r.rebalance` should throw', async function () {
     try {
-      result = await r.rebalance().run()
+      await r.rebalance().run()
       assert.fail('should throw')
     } catch (e) {
       assert(e.message.match(/^`rebalance` can only be called on a table or a database since 2.3./))
@@ -146,7 +146,7 @@ describe('administration', () => {
 
   it('`rebalance` should throw if an argument is provided', async function () {
     try {
-      result = await r.db(dbName).table(tableName).rebalance(1).run()
+      await r.db(dbName).table(tableName).rebalance(1).run()
       assert.fail('should throw')
     } catch (e) {
       assert(e.message.match(/^`rebalance` takes 0 argument, 1 provided after:/))

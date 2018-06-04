@@ -6,7 +6,7 @@ const {uuid} = require(path.join(__dirname, '/util/common.js'))
 const {before, after, describe, it} = require('mocha')
 
 describe('stable', () => {
-  let r, dbName, tableName, docs
+  let r, dbName, tableName
 
   before(async () => {
     r = await rethinkdbdash(config)
@@ -35,11 +35,12 @@ describe('stable', () => {
   })
 
   it('Table', async function () {
-    const result = docs = await r.db(dbName).table(tableName).run()
+    const result = await r.db(dbName).table(tableName).run()
     assert(result.length, 2)
   })
 
   it('get', async function () {
+    const docs = await r.db(dbName).table(tableName).run()
     const result = await r.db(dbName).table(tableName).get(docs[0].id).run()
     assert.deepEqual(result, docs[0])
   })
