@@ -1,7 +1,7 @@
 rethinkdbdash
 -------------
 
-<a href="https://app.wercker.com/project/bykey/10e69719c2031f4995798ddb9221c398"><img alt="Wercker status" src="https://app.wercker.com/status/10e69719c2031f4995798ddb9221c398/m/master" align="right" /></a>
+[![Build Status](https://travis-ci.org/rebirthdb/rebirthdb-js.svg?branch=master)](https://travis-ci.org/maeb/rebirthdb-js)
 
 A Node.js driver for RethinkDB with more advanced features.
 
@@ -498,7 +498,7 @@ errors like [issue #2839](https://github.com/rethinkdb/rethinkdb/issues/2839)
 
 Update `test/config.js` if your RethinkDB instance doesn't run on the default parameters.
 
-Make sure you run a version of Node that supports generators and run:
+Make sure you run a version of Node that supports `async/await` and run:
 ```
 npm test
 ```
@@ -509,13 +509,6 @@ Longer tests for the pool:
 mocha long_test/discovery.js -t 50000
 mocha long_test/static.js -t 50000
 ```
-
-
-Tests are also being run on [wercker](http://wercker.com/):
-- Builds: [https://app.wercker.com/#applications/52dffe8ba4acb3ef16010ef8/tab](https://app.wercker.com/#applications/52dffe8ba4acb3ef16010ef8/tab)
-- Box: 
-  - Github: [https://github.com/neumino/box-rethinkdbdash](https://github.com/neumino/box-rethinkdbdash)
-  - Wercker builds: [https://app.wercker.com/#applications/52dffc65a4acb3ef16010b60/tab](https://app.wercker.com/#applications/52dffc65a4acb3ef16010b60/tab)
 
 
 ### FAQ
