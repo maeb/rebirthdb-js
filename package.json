@@ -1,21 +1,25 @@
 {
-  "name": "rethinkdbdash",
+  "name": "rebirthdb-js",
   "version": "2.3.31",
   "description": "A Node.js driver for RethinkDB with promises and a connection pool",
+  "homepage": "https://github.com/RebirthDB/rebirthdb-js/#readme",
   "main": "lib/index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "mocha --check-leaks -t 20000",
+    "test:coverage": "nyc --reporter=text mocha --check-leaks -t 20000",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
     "browserify": "node browserify.js"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/neumino/rethinkdbdash"
+    "url": "git+https://github.com/RebirthDB/rebirthdb-js.git"
   },
   "keywords": [
     "rethinkdb",
+    "rebirthdb",
     "driver",
     "nodejs"
   ],
@@ -23,17 +27,19 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "bugs": {
-    "url": "https://github.com/neumino/rethinkdbdash/issues"
+    "url": "https://github.com/RebirthDB/rebirthdb-js/issues"
   },
   "dependencies": {
-    "bluebird": ">= 3.0.1",
-    "luxon": "1.2.0",
+    "bluebird": "^3.5.1",
+    "luxon": "^1.2.1",
     "iterall": "^1.2.2"
   },
   "devDependencies": {
     "browserify": "^16.2.2",
-    "dev-null": ">= 0.1.1",
-    "mocha": ">= 4.0.0",
+    "dev-null": "^0.1.1",
+    "mocha": "^5.2.0",
+    "coveralls": "^3.0.1",
+    "nyc": "^12.0.2",
     "standard": "^11.0.1"
   }
 }
